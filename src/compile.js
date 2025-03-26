@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
-import * as ts from "typescript";
 
 /**
  * @param {{name?:string, logger:import("@caporal/core").Logger}} args
