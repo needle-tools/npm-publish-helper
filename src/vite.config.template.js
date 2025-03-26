@@ -26,6 +26,9 @@ export default {
         // sourcemap: true,
         rollupOptions: {
             output: {
+                /** Don't minify dependency names (e.g. export three.Mesh as Mesh and not as $) */
+                minifyInternalExports: false,
+
                 plugins: [
                     minifyEs()
                 ],
