@@ -3,7 +3,7 @@
 import caporal from '@caporal/core';
 
 import { updateNpmdef } from "./src/npmdef.js";
-import { compile } from './src/compile.js';
+import { build, compile } from './src/compile.js';
 
 
 export const program = caporal.program;
@@ -18,7 +18,7 @@ program.command('update-npmdef', 'Update npmdef files')
 program.command('compile-library', 'Compile library')
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
     .action(async ({ logger, args }) => {
-        await compile({
+        await build({
             name: args.library?.toString(),
             logger
         });
@@ -29,10 +29,11 @@ program.defaultCommand = program.command('default', 'Compile and update')
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
     .action(async ({ logger, args }) => {
         await updateNpmdef();
-        await compile({
+        await build({
             name: args.library?.toString(),
             logger
         });
+        await compile({ logger });
     });
 
 

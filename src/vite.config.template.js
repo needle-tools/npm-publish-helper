@@ -22,10 +22,12 @@ export default defineConfig((config) => {
                     cjs: `<name>.umd.cjs`,
                 }[format])
             },
-            sourcemap: true,
+            // sourcemap: true,
             rollupOptions: {
                 output: {
-                    plugins: [minifyEs()],
+                    plugins: [
+                        minifyEs()
+                    ],
                     manualChunks: _ => "<name>",
                     inlineDynamicImports: false,
                     // https://rollupjs.org/configuration-options/#output-globals
