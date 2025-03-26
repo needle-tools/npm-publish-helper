@@ -27,7 +27,7 @@ export async function build(args) {
         viteConfigPath = await createDefaultViteConfig(args.name, viteConfigPath, packageJson);
     }
 
-    let cmd = "npx vite build --base=./ --outDir=dist --config=" + viteConfigPath;
+    let cmd = "npx --yes vite build --base=./ --outDir=dist --config=" + viteConfigPath;
     args.logger.info(cmd);
     execSync(cmd, { stdio: "inherit" });
     args.logger.info("Built " + args.name);
@@ -37,7 +37,7 @@ export async function build(args) {
  * @param {{logger:import("@caporal/core").Logger}} args
  */
 export async function compile(args) {
-    let cmd = `npx tsc --rootDir . --outDir lib --noEmit false --incremental false --skipLibCheck`;
+    let cmd = `npx --yes --package typescript tsc --rootDir . --outDir lib --noEmit false --incremental false --skipLibCheck`;
     args.logger.info("Compile TSC");
     execSync(cmd, { stdio: "inherit", cwd: process.cwd() });
     args.logger.info("Compiled TSC");

@@ -1,53 +1,53 @@
 import { transform } from 'esbuild';
-import { defineConfig } from 'vite';
 
+// dont import vite here because it requires the user to have vite installed
 
-/** @ts-ignore */
-export default defineConfig((config) => {
-    return {
-        ...config,
-        base: "./",
-        build: {
-            lib: {
-                entry: "<entry>",
-                name: "<name>",
-                formats: [
-                    'es',
-                    'esm',
-                    'cjs'
+/** 
+ * @type {import('vite').UserConfig}
+*/
+/** @ts-ignore (because of esm format + rollupOptions plugins ) */
+export default {
+    base: "./",
+    build: {
+        lib: {
+            entry: "<entry>",
+            name: "<name>",
+            formats: [
+                'es',
+                'esm',
+                'cjs'
+            ],
+            fileName: (format) => ({
+                es: `<name>.js`,
+                esm: `<name>.min.js`,
+                cjs: `<name>.umd.cjs`,
+            }[format])
+        },
+        // sourcemap: true,
+        rollupOptions: {
+            output: {
+                plugins: [
+                    minifyEs()
                 ],
-                fileName: (format) => ({
-                    es: `<name>.js`,
-                    esm: `<name>.min.js`,
-                    cjs: `<name>.umd.cjs`,
-                }[format])
+                manualChunks: _ => "<name>",
+                inlineDynamicImports: false,
+                // https://rollupjs.org/configuration-options/#output-globals
+                globals: {
+                    "three": "THREE",
+                    "@needle-tools/engine": "NE",
+                }
             },
-            // sourcemap: true,
-            rollupOptions: {
-                output: {
-                    plugins: [
-                        minifyEs()
-                    ],
-                    manualChunks: _ => "<name>",
-                    inlineDynamicImports: false,
-                    // https://rollupjs.org/configuration-options/#output-globals
-                    globals: {
-                        "three": "THREE",
-                        "@needle-tools/engine": "NE",
-                    }
-                },
-                external: [
-                    "@needle-tools/engine",
-                    "three",
-                    "three/examples/jsm/loaders/GLTFLoader.js",
-                    "three/examples/jsm/libs/meshopt_decoder.module.js",
-                    "three/examples/jsm/loaders/DRACOLoader.js",
-                    "three/examples/jsm/loaders/KTX2Loader.js",
-                ],
-            }
+            external: [
+                "@needle-tools/engine",
+                "three",
+                "three/examples/jsm/loaders/GLTFLoader.js",
+                "three/examples/jsm/libs/meshopt_decoder.module.js",
+                "three/examples/jsm/loaders/DRACOLoader.js",
+                "three/examples/jsm/loaders/KTX2Loader.js",
+            ],
         }
-    };
-});
+    }
+}
 
 
 
