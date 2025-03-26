@@ -1,49 +1,39 @@
 #!/usr/bin/env node
 
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
+import caporal from '@caporal/core';
 
-updateNpmdef();
-
-/**
- * @typedef {{name:string, version:string, description?:string}} PackageJson
- * @typedef {Pick<PackageJson, "name" | "version" | "description">} UnityPackageJson
- * @typedef {{packageName:string, packageVersion:string}} Npmdef
- */
-
-function updateNpmdef() {
-    /** @type {PackageJson} */
-    const currentPackageJson = JSON.parse(readFileSync("package.json", "utf8"));
-    updateUnityPackage(currentPackageJson);
-}
-
-/**
- * @param {PackageJson} packageJson
- */
-function updateUnityPackage(packageJson) {
-
-    const dir = process.cwd() + "/unity";
-    if (existsSync(dir)) {
-
-        // Update Unity packagejson
-        const unityPackageJsonPath = dir + "/package.json";
-        /** @type {UnityPackageJson} */
-        const unityPackageJson = JSON.parse(readFileSync(unityPackageJsonPath, "utf8"));
-        unityPackageJson.version = packageJson.version;
-        if (packageJson.description) unityPackageJson.description = packageJson.description;
-        writeFileSync(unityPackageJsonPath, JSON.stringify(unityPackageJson, null, 4));
-        console.log("Updated unity package.json");
+import { updateNpmdef } from "./src/npmdef.js";
+import { compile } from './src/compile.js';
 
 
-        // Update npmdefs
-        const npmdefs = readdirSync(dir).filter(f => f.endsWith(".npmdef"));
-        for (const npmdef of npmdefs) {
-            const fp = dir + "/" + npmdef;
-            console.log(`Update npmdef: ${fp}`);
-            /** @type {Npmdef} */
-            const content = JSON.parse(readFileSync(fp, "utf8"));
-            content.packageName = packageJson.name;
-            content.packageVersion = packageJson.version;
-            writeFileSync(fp, JSON.stringify(content, null, 4));
-        }
-    }
-}
+export const program = caporal.program;
+program.description('Npm Publish Helper');
+
+
+program.command('update-npmdef', 'Update npmdef files')
+    .action(async () => {
+        await updateNpmdef();
+    });
+
+program.command('compile-library', 'Compile library')
+    .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
+    .action(async ({ logger, args }) => {
+        await compile({
+            name: args.library?.toString(),
+            logger
+        });
+    });
+
+program.defaultCommand = program.command('default', 'Compile and update')
+    .configure({ visible: false, strictOptions: false })
+    .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
+    .action(async ({ logger, args }) => {
+        await updateNpmdef();
+        await compile({
+            name: args.library?.toString(),
+            logger
+        });
+    });
+
+
+program.run();

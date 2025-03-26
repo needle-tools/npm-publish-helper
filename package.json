@@ -1,5 +1,11 @@
 {
   "name": "npmdef-publish-helper",
   "version": "1.0.0",
-  "bin": "./index.js"
+  "bin": "./index.js",
+  "types": "./index.d.ts",
+  "dependencies": {
+    "@caporal/core": "^2.0.7",
+    "esbuild": "^0.25.1",
+    "vite": "^6.2.3"
+  }
 }
