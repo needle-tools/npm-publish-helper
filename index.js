@@ -4,11 +4,11 @@ import caporal from '@caporal/core';
 
 import { updateNpmdef } from "./src/npmdef.js";
 import { build, compile } from './src/compile.js';
+import { publish } from './src/publish.js';
 
 
 export const program = caporal.program;
 program.description('Npm Publish Helper');
-
 
 program.command('update-npmdef', 'Update npmdef files')
     .action(async () => {
@@ -35,6 +35,25 @@ program.defaultCommand = program.command('default', 'Compile and update')
         });
         await compile({ logger });
     });
+
+
+
+program.command('publish', 'Publish npm package')
+    .option("--directory <directory>", "Directory to publish", { required: false, validator: program.STRING })
+    .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
+    .option("--tag <tag>", "NPM tag to use", { required: false, validator: program.STRING })
+    .action(async ({ logger, args }) => {
+        const directory = args.directory.toString() || process.cwd();
+        const registry = args.registry.toString() || 'https://registry.npmjs.org/';
+        const tag = args.tag.toString() || null;
+        await publish({
+            logger: logger,
+            packageDirectory: directory,
+            registry: registry,
+            tag: tag
+        });
+    });
+
 
 
 program.run();
