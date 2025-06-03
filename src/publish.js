@@ -66,14 +66,20 @@ export async function publish(args) {
             break;
     }
 
+    const env = {
+        NODE_AUTH_TOKEN: args.accessToken || undefined,
+        NPM_CONFIG_REGISTRY: args.registry || 'https://registry.npmjs.org/'
+    }
+
     logger.info(`Publishing package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || 'latest'}`);
     let packageVersionPublished = null;
     try {
-        const cmd = `npm view ${packageJson.name}@${packageJson.version} version --registry ${args.registry}`;
+        const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
         logger.info(`Checking if package is already published (${cmd})`);
         packageVersionPublished = execSync(cmd, {
             cwd: packageDirectory,
-            stdio: 'pipe'
+            stdio: 'pipe',
+            env: env
         }).toString().trim();
     }
     catch (error) {
@@ -81,13 +87,18 @@ export async function publish(args) {
     }
 
     const needsPublish = !packageVersionPublished || packageVersionPublished !== packageJson.version;
+
+
     if (!needsPublish) {
         logger.info(`Package ${packageJson.name}@${packageJson.version} already published.`);
     }
     else {
-        const cmd = `npm publish --registry ${args.registry}`;
+        const cmd = `npm publish --access public`;
         logger.info(`Publishing package ${packageJson.name}@${packageJson.version} (${cmd})`);
-        execSync(cmd, { cwd: packageDirectory });
+        tryExecSync(cmd, {
+            cwd: packageDirectory, 
+            env: env
+        });
         logger.info(`Package ${packageJson.name}@${packageJson.version} published successfully.`);
         if (webhook) {
             await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
@@ -96,9 +107,12 @@ export async function publish(args) {
 
     // set tag
     if (args.tag) {
-        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag} --registry ${args.registry}`;
+        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
         logger.info(`Setting tag ${args.tag} for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-        execSync(cmd, { cwd: packageDirectory });
+        execSync(cmd, {
+            cwd: packageDirectory, 
+            env: env
+        });
         logger.info(`Tag ${args.tag} set for package ${packageJson.name}@${packageJson.version}.`);
     }
 

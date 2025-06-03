@@ -43,6 +43,7 @@ program.command('publish', 'Publish npm package')
     .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
     .option("--tag <tag>", "NPM tag to use", { required: false, validator: program.STRING })
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
+    .option("--access-token <access-token>", "NPM access token", { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
         const directory = (args.directory || process.cwd()).toString();
         const registry = (options.registry || 'https://registry.npmjs.org/').toString();
@@ -51,8 +52,9 @@ program.command('publish', 'Publish npm package')
             logger: logger,
             packageDirectory: directory,
             registry: registry,
+            accessToken: options.accessToken?.toString() || null,
             tag: tag,
-            webhook: options.webhook?.toString() || null
+            webhookUrl: options.webhook?.toString() || null
         });
     });
 

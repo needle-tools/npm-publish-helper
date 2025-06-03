@@ -19,6 +19,7 @@ export type PublishOptions = {
     logger: Logger;
     packageDirectory: string;
     registry: string;
+    accessToken: string | null | undefined;
     tag: string | null | undefined;
     webhookUrl: string | null | undefined;
 }

@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
  * Executes a command synchronously and returns the output.
  * If the command fails, it returns the error instead of throwing it.
  * @param {string} cmd - The command to execute.
- * @param {import('child_process').ExecSyncOptionsWithBufferEncoding | import('child_process').ExecFileOptionsWithStringEncoding} [options] - Optional options for execSync.
+ * @param {import('child_process').ExecSyncOptionsWithBufferEncoding} [options] - Optional options for execSync.
  * @return {string | null} - The output of the command as a string, or an Error object if the command fails.
  */
 export function tryExecSync(cmd, options) {
