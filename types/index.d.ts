@@ -20,4 +20,5 @@ export type PublishOptions = {
     packageDirectory: string;
     registry: string;
     tag: string | null | undefined;
+    webhookUrl: string | null | undefined;
 }

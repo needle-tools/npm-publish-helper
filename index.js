@@ -17,9 +17,9 @@ program.command('update-npmdef', 'Update npmdef files')
 
 program.command('compile-library', 'Compile library')
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
-    .action(async ({ logger, args }) => {
+    .action(async ({ logger, options }) => {
         await build({
-            name: args.library?.toString(),
+            name: options.library?.toString(),
             logger
         });
     });
@@ -27,10 +27,10 @@ program.command('compile-library', 'Compile library')
 program.defaultCommand = program.command('default', 'Compile and update')
     .configure({ visible: false, strictOptions: false })
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
-    .action(async ({ logger, args }) => {
+    .action(async ({ logger, args, options }) => {
         await updateNpmdef();
         await build({
-            name: args.library?.toString(),
+            name: options.library?.toString(),
             logger
         });
         await compile({ logger });
@@ -39,18 +39,20 @@ program.defaultCommand = program.command('default', 'Compile and update')
 
 
 program.command('publish', 'Publish npm package')
-    .option("--directory <directory>", "Directory to publish", { required: false, validator: program.STRING })
+    .argument('<directory>', 'Directory to publish', { validator: program.STRING })
     .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
     .option("--tag <tag>", "NPM tag to use", { required: false, validator: program.STRING })
-    .action(async ({ logger, args }) => {
-        const directory = args.directory.toString() || process.cwd();
-        const registry = args.registry.toString() || 'https://registry.npmjs.org/';
-        const tag = args.tag.toString() || null;
+    .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
+    .action(async ({ logger, args, options }) => {
+        const directory = (args.directory || process.cwd()).toString();
+        const registry = (options.registry || 'https://registry.npmjs.org/').toString();
+        const tag = options.tag?.toString() || null;
         await publish({
             logger: logger,
             packageDirectory: directory,
             registry: registry,
-            tag: tag
+            tag: tag,
+            webhook: options.webhook?.toString() || null
         });
     });
 
