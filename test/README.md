@@ -1,0 +1,1 @@
+Test package for https://github.com/needle-tools/npm-publish-helper

@@ -1,0 +1,1 @@
+console.log("I'm not doing anything but have been published via https://github.com/needle-tools/npm-publish-helper");

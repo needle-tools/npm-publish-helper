@@ -1,0 +1,24 @@
+name: Publish test package to NPM
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: ./
+
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+              registry-url: 'https://registry.npmjs.org'
+
+          - name: Run publish command
+            run: npx . publish "/test" --tag next --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --registry "https://registry.npmjs.org"
