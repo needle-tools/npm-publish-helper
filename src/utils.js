@@ -16,3 +16,12 @@ export function tryExecSync(cmd, options) {
         return false;
     }
 }
+
+/**
+ * Obfuscates a token by replacing the middle characters with asterisks.
+ * @param {string | null | undefined} token - The token to obfuscate.
+ */
+export function obfuscateToken(token) {
+    if (!token) return '';
+    return `${token.slice(0, 2)}***${token.slice(-2)}`;
+}

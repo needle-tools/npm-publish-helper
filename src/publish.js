@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import { appendFileSync, existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import { sendMessageToWebhook } from './webhooks.js';
-import { tryExecSync } from './utils.js';
+import { obfuscateToken, tryExecSync } from './utils.js';
 
 
 /**
@@ -30,6 +30,11 @@ export async function publish(args) {
     logger.info(`Package: ${packageJson.name}@${packageJson.version}`);
     logger.info(`Build time: ${buildTime}`);
     logger.info(`Short SHA: ${shortSha}`);
+    logger.info(`Token: '${obfuscateToken(args.accessToken)}'`);
+
+    if (!args.accessToken?.length) {
+        logger.warn(`No access token provided. Publishing to registry ${args.registry} may fail.`);
+    }
 
     if (webhook) {
         await sendMessageToWebhook(webhook, `📦 Publishing package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || '-'}\nBuild time: ${buildTime}\nShort SHA: ${shortSha}\nRepository: ${repoUrl}`);
