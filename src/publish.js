@@ -53,6 +53,11 @@ export async function publish(args) {
     if (!args.accessToken?.length) {
         logger.warn(`No access token provided. Publishing to registry ${args.registry} may fail.`);
     }
+    // Remove slahes from the end of the tag (this may happen if the tag is provided by github ref_name
+    if (args.tag?.includes("/")) {
+        logger.warn(`Tag '${args.tag}' contains slashes: replacing with '-'`);
+        args.tag = args.tag.replaceAll("/", "-");
+    }
 
     processPackageJson(packageDirectory, packageJson, { logger });
 
