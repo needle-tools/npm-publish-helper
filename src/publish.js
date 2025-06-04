@@ -22,6 +22,8 @@ export async function publish(args) {
         throw new Error(`No package.json found at ${packageJsonPath}`);
     }
 
+    const _originalPackageJson = readFileSync(packageJsonPath, 'utf-8');
+
     if (args.overrideName || args.overrideVersion) {
         logger.info(`Overriding package name and/or version in ${packageJsonPath}`);
         const json = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
@@ -148,9 +150,10 @@ export async function publish(args) {
             env: env
         });
         if (res.success) {
-            logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully.`);
+            const url = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
+            logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${url}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}>`);
+                await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}> ([link](<${url}>))`);
             }
         }
         else {
@@ -179,6 +182,12 @@ export async function publish(args) {
             logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res.error}`);
         }
     }
+
+
+    // Restore original package.json
+    logger.info(`Restoring original package.json at ${packageJsonPath}`);
+    writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
+
 
     if (process.env.GITHUB_OUTPUT) {
         appendFileSync(process.env.GITHUB_OUTPUT, `package-version=${packageJson.version}\n`);
