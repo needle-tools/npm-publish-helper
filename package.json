@@ -1,6 +1,7 @@
 {
   "name": "npmdef-publish-helper",
   "version": "1.0.0",
+  "type": "module",
   "bin": "./index.js",
   "types": "./index.d.ts",
   "dependencies": {
