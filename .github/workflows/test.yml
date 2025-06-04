@@ -27,4 +27,4 @@ jobs:
             run: npm install
 
           - name: Run publish command
-            run: npx . publish "./test" --tag next --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}"
+            run: npx . publish "./test" --tag github --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}"
