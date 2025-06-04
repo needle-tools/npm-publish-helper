@@ -132,11 +132,16 @@ export async function publish(args) {
     if (args.tag) {
         const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
         logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-        execSync(cmd, {
+        const res = tryExecSync(cmd, {
             cwd: packageDirectory,
             env: env
         });
-        logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}.`);
+        if (res) {
+            logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}.`);
+        }
+        else {
+            logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res}`);
+        }
     }
 
     if (process.env.GITHUB_OUTPUT) {
