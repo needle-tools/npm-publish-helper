@@ -11,7 +11,7 @@ export function tryExecSync(cmd, options) {
     try {
         return execSync(cmd, options).toString().trim();
     } catch (error) {
-        console.error(`Command failed: ${cmd} \nError: ${error.message}`);
+        console.error(`Command failed: ${cmd} \nError: ${error.message.substring(0, 100)}`);
         return false;
     }
 }
