@@ -55,8 +55,19 @@ export async function publish(args) {
     }
     // Remove slahes from the end of the tag (this may happen if the tag is provided by github ref_name
     if (args.tag?.includes("/")) {
-        logger.warn(`Tag '${args.tag}' contains slashes: replacing with '-'`);
-        args.tag = args.tag.replaceAll("/", "-");
+        logger.warn(`Tag '${args.tag}' contains slashes - using last part as tag.`);
+        const parts = args.tag.split('/');
+        let found = false;
+        for (let i = parts.length - 1; i >= 0; i--) {
+            if (parts[i].length > 0) {
+                found = true;
+                args.tag = parts[i];
+                break;
+            }
+        }
+        if (!found) {
+            throw new Error(`Tag '${args.tag}' is not valid`);
+        }
     }
 
     processPackageJson(packageDirectory, packageJson, { logger });
