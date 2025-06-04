@@ -142,6 +142,9 @@ export async function publish(args) {
         needsPublish = !packageVersionPublished || packageVersionPublished !== packageJson.version;
         if (!needsPublish) {
             logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
+            if (webhook) {
+                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}>`);
+            }
         }
         else {
             let cmd = `npm publish --access public`
@@ -186,15 +189,21 @@ export async function publish(args) {
             });
             if (res.success) {
                 logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `✅ **Set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``);
+                }
             }
             else {
                 logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
+                }
             }
         }
     }
 
 
-    
+
     // Restore original package.json
     logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
     writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
