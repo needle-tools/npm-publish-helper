@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { appendFileSync, existsSync, readFileSync } from 'fs';
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { sendMessageToWebhook } from './webhooks.js';
 import { obfuscateToken, tryExecSync } from './utils.js';
@@ -14,11 +14,26 @@ export async function publish(args) {
     const webhook = args.webhookUrl;
     const packageDirectory = resolve(args.packageDirectory || process.cwd());
     const packageJsonPath = `${packageDirectory}/package.json`;
+    const dryRun = args.dryRun || false;
 
     const packageExists = existsSync(packageJsonPath);
     logger.info(`Publishing package in ${packageDirectory} (exists: ${packageExists})`);
     if (!packageExists) {
         throw new Error(`No package.json found at ${packageJsonPath}`);
+    }
+
+    if (args.overrideName || args.overrideVersion) {
+        logger.info(`Overriding package name and/or version in ${packageJsonPath}`);
+        const json = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        if (args.overrideName) {
+            json.name = args.overrideName;
+            logger.info(`Overriding package name to ${json.name}`);
+        }
+        if (args.overrideVersion) {
+            json.version = args.overrideVersion;
+            logger.info(`Overriding package version to ${json.version}`);
+        }
+        writeFileSync(packageJsonPath, JSON.stringify(json, null, 2));
     }
 
     /** @type {import('../types').PackageJson} */
@@ -62,7 +77,7 @@ export async function publish(args) {
                     packageJson.version = packageJson.version.substring(0, dashIndex)
                 }
                 let nextVersion = `${packageJson.version}-${args.tag}`;
-                if (shortSha) {
+                if (args.useCommitHash && shortSha) {
                     nextVersion += `.${shortSha}`;
                 }
                 if (currentVersion !== nextVersion) {
@@ -114,7 +129,11 @@ export async function publish(args) {
         logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
     }
     else {
-        const cmd = `npm publish --access public`;
+        let cmd = `npm publish --access public`
+        if (dryRun) {
+            cmd += ' --dry-run';
+            logger.info(`Dry run mode enabled, not actually publishing package.`);
+        }
         logger.info(`Publishing package ${packageJson.name}@${packageJson.version}: '${cmd}'`);
         const res = tryExecSync(cmd, {
             cwd: packageDirectory,
@@ -135,7 +154,10 @@ export async function publish(args) {
     }
 
     // set tag
-    if (args.tag) {
+    if (dryRun) {
+        logger.info(`Dry run mode enabled, not actually setting tag.`);
+    }
+    else if (args.tag) {
         const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
         logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
         const res = tryExecSync(cmd, {

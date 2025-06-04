@@ -41,9 +41,14 @@ program.defaultCommand = program.command('default', 'Compile and update')
 program.command('publish', 'Publish npm package')
     .argument('<directory>', 'Directory to publish', { validator: program.STRING })
     .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
+    // option to use commit hash as version
+    .option("--commit-hash", "Use commit hash as version (default: true)", { required: false, validator: program.BOOLEAN, default: true })
     .option("--tag <tag>", "NPM tag to use", { required: false, validator: program.STRING })
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
     .option("--access-token <access-token>", "NPM access token", { required: false, validator: program.STRING })
+    .option("--dry-run", "Dry run mode, do not publish", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--override-name <name>", "Override package name", { required: false, validator: program.STRING })
+    .option("--override-version <version>", "Override package version", { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
         const directory = (args.directory || process.cwd()).toString();
         const registry = (options.registry || 'https://registry.npmjs.org/').toString();
@@ -53,8 +58,12 @@ program.command('publish', 'Publish npm package')
             packageDirectory: directory,
             registry: registry,
             accessToken: options.accessToken?.toString() || null,
+            useCommitHash: options.commitHash !== false,
+            dryRun: options.dryRun === true,
             tag: tag,
-            webhookUrl: options.webhook?.toString() || null
+            webhookUrl: options.webhook?.toString() || null,
+            overrideName: options.overrideName?.toString() || null,
+            overrideVersion: options.overrideVersion?.toString() || null
         });
     });
 
