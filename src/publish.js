@@ -69,13 +69,17 @@ export async function publish(args) {
     const env = {
         ...process.env,
         NPM_TOKEN: args.accessToken || undefined,
-        // NPM_CONFIG_REGISTRY: (args.registry || 'https://registry.npmjs.org/'),
+        NPM_CONFIG_REGISTRY: (args.registry || 'https://registry.npmjs.org/'),
     }
 
     // set config
     const registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
     const configCmd = `npm config set //${registryUrlWithoutScheme}:_authToken ${env.NPM_TOKEN}`;
-    execSync(configCmd);
+    logger.info(`Setting npm config to registry //${registryUrlWithoutScheme}`);
+    execSync(configCmd, {
+        cwd: packageDirectory,
+        env
+    });
 
 
     let packageVersionPublished = null;
