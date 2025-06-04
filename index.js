@@ -52,7 +52,6 @@ program.command('publish', 'Publish npm package')
         const directory = (args.directory || process.cwd()).toString();
         const registry = (options.registry || 'https://registry.npmjs.org/').toString();
         const tag = options.tag?.toString() || null;
-        console.log({ options });
         await publish({
             logger: logger,
             packageDirectory: directory,
