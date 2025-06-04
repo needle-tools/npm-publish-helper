@@ -17,10 +17,10 @@ export async function publish(args) {
     const dryRun = args.dryRun || false;
 
     const packageExists = existsSync(packageJsonPath);
-    logger.info(`Publishing package in ${packageDirectory} (exists: ${packageExists})`);
     if (!packageExists) {
         throw new Error(`No package.json found at ${packageJsonPath}`);
     }
+    logger.info(`Publishing package at ${packageDirectory}`);
 
     const _originalPackageJson = readFileSync(packageJsonPath, 'utf-8');
 

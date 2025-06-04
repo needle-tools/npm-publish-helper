@@ -49,6 +49,7 @@ program.command('publish', 'Publish npm package')
     .option("--dry-run", "Dry run mode, do not publish", { required: false, validator: program.BOOLEAN, default: false })
     .option("--override-name <name>", "Override package name", { required: false, validator: program.STRING })
     .option("--override-version <version>", "Override package version", { required: false, validator: program.STRING })
+    // .option("--exec-before", "Allow running a command before publishing (e.g. 'npm run ...')", { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
         const directory = (args.directory || process.cwd()).toString();
         const registry = (options.registry || 'https://registry.npmjs.org/').toString();
@@ -64,7 +65,7 @@ program.command('publish', 'Publish npm package')
             tag: tag,
             webhookUrl: options.webhook?.toString() || null,
             overrideName: options.overrideName?.toString() || null,
-            overrideVersion: options.overrideVersion?.toString() || null
+            overrideVersion: options.overrideVersion?.toString() || null,
         });
     });
 
