@@ -54,7 +54,7 @@ export async function publish(args) {
     }
 
     if (webhook) {
-        let msg = `📦 **Publish package** \`${packageJson.name}@${packageJson.version}\`\n`;
+        let msg = `📦 **Publish package** \`${packageJson.name}\`\n`;
         msg += "```\n";
         msg += `Build time: ${buildTime}\n`;
         msg += `Short SHA: ${shortSha}\n`;
@@ -91,6 +91,9 @@ export async function publish(args) {
                 nextVersion += `-${shortSha}`;
             }
         }
+        else {
+            logger.info(`Skipping commit hash in version as useCommitHash is false or shortSha is not available.`);
+        }
         if (currentVersion !== nextVersion) {
             // the package version can only be updated if it's different
             const cmd = `npm version ${nextVersion} --no-git-tag-version`;
@@ -99,6 +102,7 @@ export async function publish(args) {
         }
         // ensure the version is set correctly (it might have been modified in the meantime)
         packageJson.version = nextVersion;
+        logger.info(`Updated package version to ${packageJson.version}`);
     }
 
 
