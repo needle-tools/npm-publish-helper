@@ -1,5 +1,5 @@
 {
-  "name": "npmdef-publish-helper",
+  "name": "npm-publish-helper",
   "version": "1.0.0",
   "type": "module",
   "bin": "./index.js",
