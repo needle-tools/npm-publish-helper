@@ -2,7 +2,8 @@
 
 Use e.g. in a `package.json` or github action
 
-### In your package.json
+### package.json
+You can call this script from your package.json scripts
 ```json
 {
     "scripts": {
@@ -12,11 +13,49 @@ Use e.g. in a `package.json` or github action
 }
 ```
 
-### Publish via github workflow
+## Publish via Github Action
 ```yml
   - name: Run publish command # publish a new version with a tag + git short hash
     run: npx . publish "path/to/directory" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --version+tag --tag --tag "${{ github.ref_name }}"
 ```
+
+### Example
+
+```yml
+name: Release Workflow
+on:
+  push:
+    branches:
+      - 'release/*'
+
+jobs:
+  run-release-script:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'  # Fetch all submodules recursively
+          token: ${{ secrets.GH_RELEASE_TOKEN }} 
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Publish to npm
+        run: npx --yes needle-tools/npm-publish-helper publish "./dist" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --tag "${{github.ref_name}}" --version+tag --version+hash
+
+
+```
+
 
 
 
