@@ -69,11 +69,14 @@ export async function publish(args) {
     const env = {
         ...process.env,
         NPM_TOKEN: args.accessToken || undefined,
-        NPM_CONFIG_REGISTRY: (args.registry || 'https://registry.npmjs.org/') + "_authToken=" + (args.accessToken || ''),
+        // NPM_CONFIG_REGISTRY: (args.registry || 'https://registry.npmjs.org/'),
     }
 
     // set config
-    // const configCmd = `npm config set registry ${env.NPM_CONFIG_REGISTRY}:_`;
+    const registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
+    const configCmd = `npm config set //${registryUrlWithoutScheme}:_authToken ${env.NPM_TOKEN}`;
+    execSync(configCmd);
+
 
     let packageVersionPublished = null;
     try {
@@ -119,12 +122,12 @@ export async function publish(args) {
     // set tag
     if (args.tag) {
         const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
-        logger.info(`Setting tag ${args.tag} for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+        logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
         execSync(cmd, {
             cwd: packageDirectory,
             env: env
         });
-        logger.info(`Tag ${args.tag} set for package ${packageJson.name}@${packageJson.version}.`);
+        logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}.`);
     }
 
     if (process.env.GITHUB_OUTPUT) {
