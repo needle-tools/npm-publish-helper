@@ -115,15 +115,15 @@ export async function publish(args) {
             env: env
         });
         if (res) {
-            logger.info(`Package ${packageJson.name}@${packageJson.version} published successfully.`);
+            logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully.`);
             if (webhook) {
                 await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
             }
         }
         else {
-            logger.error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
+            logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `❌ Failed to publish package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || '-'}\nError: ${res}`);
+                await sendMessageToWebhook(webhook, `❌ Failed to publish package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || '-'}`);
             }
         }
     }
