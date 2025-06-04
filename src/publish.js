@@ -44,35 +44,37 @@ export async function publish(args) {
         appendFileSync(process.env.GITHUB_OUTPUT, `build-time=${buildTime}\n`);
     }
 
-    switch (args.tag) {
-        case "latest":
-            // don't change the version, just ensure it's set to latest
-            break;
-        default:
-        case "next":
-        case "canary":
-        case "beta":
-        case "alpha":
-            const currentVersion = packageJson.version;
-            let isPrerelease = packageJson.version.includes('-');
-            // Replace the pre-release tag if it exists
-            if (isPrerelease) {
-                const dashIndex = packageJson.version.indexOf('-');
-                packageJson.version = packageJson.version.substring(0, dashIndex)
-            }
-            let nextVersion = `${packageJson.version}-${args.tag}`;
-            if (shortSha) {
-                nextVersion += `.${shortSha}`;
-            }
-            if (currentVersion !== nextVersion) {
-                // the package version can only be updated if it's different
-                const cmd = `npm version ${nextVersion} --no-git-tag-version`;
-                logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
-                execSync(cmd, { cwd: packageDirectory });
-            }
-            // ensure the version is set correctly (it might have been modified in the meantime)
-            packageJson.version = nextVersion;
-            break;
+    if (args.tag?.length) {
+        switch (args.tag) {
+            case "latest":
+                // don't change the version, just ensure it's set to latest
+                break;
+            default:
+            case "next":
+            case "canary":
+            case "beta":
+            case "alpha":
+                const currentVersion = packageJson.version;
+                let isPrerelease = packageJson.version.includes('-');
+                // Replace the pre-release tag if it exists
+                if (isPrerelease) {
+                    const dashIndex = packageJson.version.indexOf('-');
+                    packageJson.version = packageJson.version.substring(0, dashIndex)
+                }
+                let nextVersion = `${packageJson.version}-${args.tag}`;
+                if (shortSha) {
+                    nextVersion += `.${shortSha}`;
+                }
+                if (currentVersion !== nextVersion) {
+                    // the package version can only be updated if it's different
+                    const cmd = `npm version ${nextVersion} --no-git-tag-version`;
+                    logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
+                    execSync(cmd, { cwd: packageDirectory });
+                }
+                // ensure the version is set correctly (it might have been modified in the meantime)
+                packageJson.version = nextVersion;
+                break;
+        }
     }
 
     const env = {
