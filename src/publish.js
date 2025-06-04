@@ -52,12 +52,14 @@ export async function publish(args) {
     }
 
     if (webhook) {
-        let msg = `📦 **Publish package** \`${packageJson.name}@${packageJson.version}\``;
+        let msg = `📦 **Publish package** \`${packageJson.name}@${packageJson.version}\`\n`;
         msg += "```\n";
         msg += `Build time: ${buildTime}\n`;
         msg += `Short SHA: ${shortSha}\n`;
         msg += `Repository: ${repoUrl}\n`;
         msg += `Registry: ${args.registry}\n`;
+        msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
+        msg += "```";
         await sendMessageToWebhook(webhook, msg);
     }
 
