@@ -1,6 +1,6 @@
 {
   "name": "publish-helper-test-package",
-  "version": "1.0.0-alpha.44e3f60",
+  "version": "1.0.0",
   "main": "index.js",
   "license": "ISC"
 }

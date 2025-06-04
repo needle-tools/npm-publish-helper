@@ -69,123 +69,134 @@ export async function publish(args) {
         appendFileSync(process.env.GITHUB_OUTPUT, `build-time=${buildTime}\n`);
     }
 
-    if (args.tag?.length) {
-        switch (args.tag) {
-            case "latest":
-                // don't change the version, just ensure it's set to latest
-                break;
-            default:
-            case "next":
-            case "canary":
-            case "beta":
-            case "alpha":
-                const currentVersion = packageJson.version;
-                let isPrerelease = packageJson.version.includes('-');
-                // Replace the pre-release tag if it exists
-                if (isPrerelease) {
-                    const dashIndex = packageJson.version.indexOf('-');
-                    packageJson.version = packageJson.version.substring(0, dashIndex)
-                }
-                let nextVersion = `${packageJson.version}-${args.tag}`;
-                if (args.useCommitHash && shortSha) {
-                    nextVersion += `.${shortSha}`;
-                }
-                if (currentVersion !== nextVersion) {
-                    // the package version can only be updated if it's different
-                    const cmd = `npm version ${nextVersion} --no-git-tag-version`;
-                    logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
-                    execSync(cmd, { cwd: packageDirectory });
-                }
-                // ensure the version is set correctly (it might have been modified in the meantime)
-                packageJson.version = nextVersion;
-                break;
+
+    // Update package version
+    {
+        const currentVersion = packageJson.version;
+        let isPrerelease = packageJson.version.includes('-');
+        // Replace the pre-release tag if it exists
+        if (isPrerelease) {
+            const dashIndex = packageJson.version.indexOf('-');
+            packageJson.version = packageJson.version.substring(0, dashIndex)
         }
+        let nextVersion = `${packageJson.version}`;
+        if (args.tag && args.tag !== "latest") {
+            nextVersion += `-${args.tag}`;
+        }
+        if (args.useCommitHash && shortSha) {
+            if (nextVersion.includes('-')) {
+                nextVersion += `.${shortSha}`;
+            }
+            else {
+                nextVersion += `-${shortSha}`;
+            }
+        }
+        if (currentVersion !== nextVersion) {
+            // the package version can only be updated if it's different
+            const cmd = `npm version ${nextVersion} --no-git-tag-version`;
+            logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
+            execSync(cmd, { cwd: packageDirectory });
+        }
+        // ensure the version is set correctly (it might have been modified in the meantime)
+        packageJson.version = nextVersion;
     }
 
+
+    // Default env
     const env = {
         ...process.env,
         NPM_TOKEN: args.accessToken || undefined,
         NPM_CONFIG_REGISTRY: (args.registry || 'https://registry.npmjs.org/'),
     }
 
+
     // set config
-    const registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
-    const configCmd = `npm config set //${registryUrlWithoutScheme}:_authToken ${env.NPM_TOKEN}`;
-    logger.info(`Setting npm config to registry //${registryUrlWithoutScheme}`);
-    execSync(configCmd, {
-        cwd: packageDirectory,
-        env
-    });
-
-
-    let packageVersionPublished = null;
-    try {
-        const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
-        logger.info(`Checking if package is already published (${cmd})`);
-        packageVersionPublished = execSync(cmd, {
+    {
+        const registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
+        const configCmd = `npm config set //${registryUrlWithoutScheme}:_authToken ${env.NPM_TOKEN}`;
+        logger.info(`Setting npm config to registry //${registryUrlWithoutScheme}`);
+        execSync(configCmd, {
             cwd: packageDirectory,
-            stdio: 'pipe',
-            env: env
-        }).toString().trim();
-    }
-    catch (error) {
-        logger.warn(`Package version not found ${packageJson.name}@${packageJson.version}: ${error.message}`);
-    }
-
-    const needsPublish = !packageVersionPublished || packageVersionPublished !== packageJson.version;
-
-
-    if (!needsPublish) {
-        logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
-    }
-    else {
-        let cmd = `npm publish --access public`
-        if (dryRun) {
-            cmd += ' --dry-run';
-            logger.info(`Dry run mode enabled, not actually publishing package.`);
-        }
-        logger.info(`Publishing package ${packageJson.name}@${packageJson.version}: '${cmd}'`);
-        const res = tryExecSync(cmd, {
-            cwd: packageDirectory,
-            env: env
+            env
         });
-        if (res.success) {
-            const url = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
-            logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${url}`);
-            if (webhook) {
-                await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}> ([link](<${url}>))`);
-            }
+    }
+
+
+    // publish package
+    let packageVersionPublished = null;
+    let needsPublish = false;
+    {
+        try {
+            const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
+            logger.info(`Checking if package is already published (${cmd})`);
+            packageVersionPublished = execSync(cmd, {
+                cwd: packageDirectory,
+                stdio: 'pipe',
+                env: env
+            }).toString().trim();
+        }
+        catch (error) {
+            logger.warn(`Package version not found ${packageJson.name}@${packageJson.version}: ${error.message}`);
+        }
+
+        needsPublish = !packageVersionPublished || packageVersionPublished !== packageJson.version;
+        if (!needsPublish) {
+            logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
         }
         else {
-            logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
-            if (webhook) {
-                await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
+            let cmd = `npm publish --access public`
+            if (dryRun) {
+                cmd += ' --dry-run';
+                logger.info(`Dry run mode enabled, not actually publishing package.`);
+            }
+            logger.info(`Publishing package ${packageJson.name}@${packageJson.version}: '${cmd}'`);
+            const res = tryExecSync(cmd, {
+                cwd: packageDirectory,
+                env: env
+            });
+            if (res.success) {
+                const url = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
+                logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${url}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}> ([link](<${url}>))`);
+                }
+            }
+            else {
+                logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
+                }
             }
         }
     }
+
+
 
     // set tag
-    if (dryRun) {
-        logger.info(`Dry run mode enabled, not actually setting tag.`);
-    }
-    else if (args.tag) {
-        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
-        logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-        const res = tryExecSync(cmd, {
-            cwd: packageDirectory,
-            env: env
-        });
-        if (res.success) {
-            logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+    {
+        if (dryRun) {
+            logger.info(`Dry run mode enabled, not actually setting tag.`);
         }
-        else {
-            logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+        else if (args.tag) {
+            const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
+            logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+            const res = tryExecSync(cmd, {
+                cwd: packageDirectory,
+                env: env
+            });
+            if (res.success) {
+                logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+            }
+            else {
+                logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+            }
         }
     }
 
 
+    
     // Restore original package.json
-    logger.info(`Restoring original package.json at ${packageJsonPath}`);
+    logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
     writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
 
 
