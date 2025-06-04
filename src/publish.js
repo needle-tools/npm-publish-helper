@@ -68,11 +68,10 @@ export async function publish(args) {
 
     const env = {
         ...process.env,
-        NODE_AUTH_TOKEN: args.accessToken || undefined,
+        NPM_TOKEN: args.accessToken || undefined,
         NPM_CONFIG_REGISTRY: args.registry || 'https://registry.npmjs.org/'
     }
 
-    logger.info(`Publishing package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || 'latest'}`);
     let packageVersionPublished = null;
     try {
         const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
@@ -95,12 +94,12 @@ export async function publish(args) {
     }
     else {
         const cmd = `npm publish --access public`;
-        logger.info(`Publishing package ${packageJson.name}@${packageJson.version} (${cmd})`);
+        logger.info(`Publishing package ${packageJson.name}@${packageJson.version}: '${cmd}'`);
         const res = tryExecSync(cmd, {
             cwd: packageDirectory,
             env: env
         });
-        if (!res) {
+        if (res) {
             logger.info(`Package ${packageJson.name}@${packageJson.version} published successfully.`);
             if (webhook) {
                 await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
