@@ -5,13 +5,13 @@ import { execSync } from 'child_process';
  * If the command fails, it returns the error instead of throwing it.
  * @param {string} cmd - The command to execute.
  * @param {import('child_process').ExecSyncOptionsWithBufferEncoding} [options] - Optional options for execSync.
- * @return {string | null} - The output of the command as a string, or an Error object if the command fails.
+ * @return {false | string} - The output of the command as a string, or an Error object if the command fails.
  */
 export function tryExecSync(cmd, options) {
     try {
         return execSync(cmd, options).toString().trim();
     } catch (error) {
         console.error(`Command failed: ${cmd} \nError: ${error.message}`);
-        return null;
+        return false;
     }
 }

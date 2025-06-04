@@ -67,6 +67,7 @@ export async function publish(args) {
     }
 
     const env = {
+        ...process.env,
         NODE_AUTH_TOKEN: args.accessToken || undefined,
         NPM_CONFIG_REGISTRY: args.registry || 'https://registry.npmjs.org/'
     }
@@ -95,13 +96,21 @@ export async function publish(args) {
     else {
         const cmd = `npm publish --access public`;
         logger.info(`Publishing package ${packageJson.name}@${packageJson.version} (${cmd})`);
-        tryExecSync(cmd, {
-            cwd: packageDirectory, 
+        const res = tryExecSync(cmd, {
+            cwd: packageDirectory,
             env: env
         });
-        logger.info(`Package ${packageJson.name}@${packageJson.version} published successfully.`);
-        if (webhook) {
-            await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
+        if (!res) {
+            logger.info(`Package ${packageJson.name}@${packageJson.version} published successfully.`);
+            if (webhook) {
+                await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
+            }
+        }
+        else {
+            logger.error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
+            if (webhook) {
+                await sendMessageToWebhook(webhook, `❌ Failed to publish package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || '-'}\nError: ${res}`);
+            }
         }
     }
 
@@ -110,7 +119,7 @@ export async function publish(args) {
         const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
         logger.info(`Setting tag ${args.tag} for package ${packageJson.name}@${packageJson.version} (${cmd})`);
         execSync(cmd, {
-            cwd: packageDirectory, 
+            cwd: packageDirectory,
             env: env
         });
         logger.info(`Tag ${args.tag} set for package ${packageJson.name}@${packageJson.version}.`);
