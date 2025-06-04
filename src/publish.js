@@ -63,11 +63,13 @@ export async function publish(args) {
                 nextVersion += `.${shortSha}`;
             }
             if (currentVersion !== nextVersion) {
+                // the package version can only be updated if it's different
                 const cmd = `npm version ${nextVersion} --no-git-tag-version`;
-                logger.info(`Setting version to ${nextVersion} with command: ${cmd}`);
+                logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
                 execSync(cmd, { cwd: packageDirectory });
-                packageJson.version = nextVersion;
             }
+            // ensure the version is set correctly (it might have been modified in the meantime)
+            packageJson.version = nextVersion;
             break;
     }
 
