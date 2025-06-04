@@ -11,7 +11,8 @@ export function tryExecSync(cmd, options) {
     try {
         return execSync(cmd, options).toString().trim();
     } catch (error) {
-        console.error(`Command failed: ${cmd} \nError: ${error.message.substring(0, 100)}`);
+        const oneLineError = error.message.split('\n')[0];
+        console.error(`Command failed: ${cmd}\n— Error: "${oneLineError}"`);
         return false;
     }
 }
