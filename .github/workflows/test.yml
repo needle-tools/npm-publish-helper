@@ -27,13 +27,13 @@ jobs:
             run: npm install
 
           - name: Run publish command
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --commit-hash --tag github
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --tag github --version+tag
 
           - name: Run publish without tag
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --commit-hash
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash
 
           - name: Run publish with another tag
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --commit-hash --tag github-2
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --tag github-2
 
           - name: Run publish without commit hash
             run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}"

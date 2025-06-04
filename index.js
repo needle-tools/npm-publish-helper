@@ -41,9 +41,9 @@ program.defaultCommand = program.command('default', 'Compile and update')
 program.command('publish', 'Publish npm package')
     .argument('<directory>', 'Directory to publish', { validator: program.STRING })
     .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
-    .option("--commit-hash", "Use commit hash in version (default: false)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--tag <tag>", "NPM tag to use", { required: false, validator: program.STRING })
-    .option("--use-tag-in-version", "Include tag in version (default: true)", { required: false, validator: program.BOOLEAN, default: true })
+    .option("--version+hash", "Include hash in version (default: false)", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--version+tag", "Include tag in version (default: false)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
     .option("--access-token <access-token>", "NPM access token", { required: false, validator: program.STRING })
     .option("--dry-run", "Dry run mode, do not publish", { required: false, validator: program.BOOLEAN, default: false })
@@ -58,8 +58,8 @@ program.command('publish', 'Publish npm package')
             packageDirectory: directory,
             registry: registry,
             accessToken: options.accessToken?.toString() || null,
-            useCommitHash: options.commitHash !== false,
-            useTagInVersion: options.useTagInVersion !== false,
+            useHashInVersion: options.versionHash === true, // default to false
+            useTagInVersion: options.versionTag === true, // default to false
             dryRun: options.dryRun === true,
             tag: tag,
             webhookUrl: options.webhook?.toString() || null,

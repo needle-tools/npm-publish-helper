@@ -80,11 +80,11 @@ export async function publish(args) {
             packageJson.version = packageJson.version.substring(0, dashIndex)
         }
         let nextVersion = `${packageJson.version}`;
-        if (args.tag && args.tag !== "latest" && args.useTagInVersion) {
+        if (args.useTagInVersion && args.tag && args.tag !== "latest") {
             logger.info(`Adding tag '${args.tag}' to version.`);
             nextVersion += `-${args.tag}`;
         }
-        if (args.useCommitHash && shortSha) {
+        if (args.useHashInVersion && shortSha) {
             if (nextVersion.includes('-')) {
                 nextVersion += `.${shortSha}`;
             }
@@ -126,6 +126,7 @@ export async function publish(args) {
         });
     }
 
+    const htmlUrl = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
 
     // publish package
     let packageVersionPublished = null;
@@ -148,7 +149,7 @@ export async function publish(args) {
         if (!needsPublish) {
             logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}>`);
+                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` at [${htmlUrl}](<${htmlUrl}>)`);
             }
         }
         else {
@@ -163,10 +164,9 @@ export async function publish(args) {
                 env: env
             });
             if (res.success) {
-                const url = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
-                logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${url}`);
+                logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${htmlUrl}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}> ([link](<${url}>))`);
+                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to [${htmlUrl}](<${htmlUrl}>)`);
                 }
             }
             else {

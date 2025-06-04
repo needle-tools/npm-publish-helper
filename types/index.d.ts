@@ -21,7 +21,7 @@ export type PublishOptions = {
     registry: string;
     accessToken: string | null | undefined;
     tag: string | null | undefined;
-    useCommitHash: boolean;
+    useHashInVersion: boolean;
     useTagInVersion: boolean;
     dryRun: boolean;
     webhookUrl: string | null | undefined;
