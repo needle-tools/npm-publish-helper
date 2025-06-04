@@ -127,6 +127,7 @@ export async function publish(args) {
     }
 
     const htmlUrl = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
+    const htmlUrlMarkdown = `[${htmlUrl.replaceAll("http://", "").replaceAll("https://", "")}](<${htmlUrl}>)`;
 
     // publish package
     let packageVersionPublished = null;
@@ -149,7 +150,7 @@ export async function publish(args) {
         if (!needsPublish) {
             logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` at [${htmlUrl}](<${htmlUrl}>)`);
+                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` at ${htmlUrlMarkdown}`);
             }
         }
         else {
@@ -166,7 +167,7 @@ export async function publish(args) {
             if (res.success) {
                 logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${htmlUrl}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to [${htmlUrl}](<${htmlUrl}>)`);
+                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to ${htmlUrlMarkdown}`);
                 }
             }
             else {
