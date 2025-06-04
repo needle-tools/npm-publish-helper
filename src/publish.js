@@ -38,6 +38,7 @@ export async function publish(args) {
         writeFileSync(packageJsonPath, JSON.stringify(json, null, 2));
     }
 
+
     /** @type {import('../types').PackageJson} */
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     const buildTime = new Date().toISOString();
@@ -52,6 +53,8 @@ export async function publish(args) {
     if (!args.accessToken?.length) {
         logger.warn(`No access token provided. Publishing to registry ${args.registry} may fail.`);
     }
+
+    processPackageJson(packageDirectory, packageJson, { logger });
 
     if (webhook) {
         let msg = `📦 **Publish package** \`${packageJson.name}\`\n`;
@@ -219,5 +222,61 @@ export async function publish(args) {
         appendFileSync(process.env.GITHUB_OUTPUT, `package-version=${packageJson.version}\n`);
         appendFileSync(process.env.GITHUB_OUTPUT, `package-name=${packageJson.name}\n`);
         appendFileSync(process.env.GITHUB_OUTPUT, `package-published=${needsPublish}\n`);
+    }
+}
+
+
+
+/**
+ * Processes the package.json file to replace local dependencies with their current versions.
+ * @param {string} packageJsonDirectory - The directory where the package.json file is located.
+ * @param {import('../types').PackageJson} packageJson - The package.json object to process.
+ * @param {{logger:import('@caporal/core').Logger}} args
+ */
+function processPackageJson(packageJsonDirectory, packageJson, args) {
+
+    let modified = false;
+
+    if (packageJson.dependencies) {
+        replaceLocalPathWithVersion(packageJson.dependencies);
+    }
+    if (packageJson.devDependencies) {
+        replaceLocalPathWithVersion(packageJson.devDependencies);
+    }
+    if (packageJson.peerDependencies) {
+        replaceLocalPathWithVersion(packageJson.peerDependencies);
+    }
+    if (packageJson.optionalDependencies) {
+        replaceLocalPathWithVersion(packageJson.optionalDependencies);
+    }
+
+    if (modified) {
+        args.logger.info(`[${packageJson.name}]: Modified package.json to replace local paths with versions.`);
+        writeFileSync(resolve(packageJsonDirectory, 'package.json'), JSON.stringify(packageJson, null, 2), 'utf-8');
+    }
+
+    /**
+     * @param {Record<string, string>} object
+     */
+    function replaceLocalPathWithVersion(object) {
+        for (const [key, value] of Object.entries(object)) {
+            if (value.startsWith('file:')) {
+                const localpath = value.substring("file:".length).trim();
+                const localPackageJsonPath = resolve(packageJsonDirectory, localpath, 'package.json');
+                if (!existsSync(localPackageJsonPath)) {
+                    args.logger.warn(`[${packageJson.name}]: Dependency '${key}' is a local path '${localpath}' but no package.json found at ${localPackageJsonPath}. Keeping as is.`);
+                    continue;
+                }
+                const localPackageJson = JSON.parse(readFileSync(localPackageJsonPath, 'utf-8'));
+                if (localPackageJson.version) {
+                    modified = true;
+                    args.logger.info(`[${packageJson.name}]: Replacing dependency '${key}' with version '${localPackageJson.version}' (from ${localPackageJsonPath})`);
+                    object[key] = localPackageJson.version;
+                } else {
+                    args.logger.warn(`[${packageJson.name}]: Dependency '${key}' is a local path but has no version in ${localPackageJsonPath}. Keeping as is.`);
+                }
+
+            }
+        }
     }
 }
