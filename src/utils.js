@@ -5,15 +5,16 @@ import { execSync } from 'child_process';
  * If the command fails, it returns the error instead of throwing it.
  * @param {string} cmd - The command to execute.
  * @param {import('child_process').ExecSyncOptionsWithBufferEncoding} [options] - Optional options for execSync.
- * @return {false | string} - The output of the command as a string, or an Error object if the command fails.
+ * @return {{success: false, error:string|Error, output:string } | {success: true, output:string}} - The output of the command as a string, or an Error object if the command fails.
  */
 export function tryExecSync(cmd, options) {
     try {
-        return execSync(cmd, options).toString().trim();
+        const res = execSync(cmd, options).toString().trim();
+        return { success: true, output: res };
     } catch (error) {
         const oneLineError = error.message.split('\n')[0];
         console.error(`Command failed: ${cmd}\n— Error: "${oneLineError}"`);
-        return false;
+        return { success: false, output: error.message, error: error,  };
     }
 }
 

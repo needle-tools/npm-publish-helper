@@ -24,8 +24,8 @@ export async function publish(args) {
     /** @type {import('../types').PackageJson} */
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
     const buildTime = new Date().toISOString();
-    const shortSha = tryExecSync('git rev-parse --short HEAD', { cwd: packageDirectory });
-    const repoUrl = tryExecSync('git config --get remote.origin.url', { cwd: packageDirectory });
+    const shortSha = tryExecSync('git rev-parse --short HEAD', { cwd: packageDirectory }).output;
+    const repoUrl = tryExecSync('git config --get remote.origin.url', { cwd: packageDirectory }).output;
 
     logger.info(`Package: ${packageJson.name}@${packageJson.version}`);
     logger.info(`Build time: ${buildTime}`);
@@ -45,8 +45,10 @@ export async function publish(args) {
     }
 
     switch (args.tag) {
-        case "stable":
+        case "latest":
+            // don't change the version, just ensure it's set to latest
             break;
+        default:
         case "next":
         case "canary":
         case "beta":
@@ -107,7 +109,7 @@ export async function publish(args) {
 
 
     if (!needsPublish) {
-        logger.info(`Package ${packageJson.name}@${packageJson.version} already published.`);
+        logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
     }
     else {
         const cmd = `npm publish --access public`;
@@ -116,7 +118,7 @@ export async function publish(args) {
             cwd: packageDirectory,
             env: env
         });
-        if (res) {
+        if (res.success) {
             logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully.`);
             if (webhook) {
                 await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
@@ -138,11 +140,11 @@ export async function publish(args) {
             cwd: packageDirectory,
             env: env
         });
-        if (res) {
-            logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}.`);
+        if (res.success) {
+            logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
         }
         else {
-            logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res}`);
+            logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res.error}`);
         }
     }
 
