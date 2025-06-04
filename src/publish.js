@@ -52,7 +52,13 @@ export async function publish(args) {
     }
 
     if (webhook) {
-        await sendMessageToWebhook(webhook, `📦 Publishing package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || '-'}\nBuild time: ${buildTime}\nShort SHA: ${shortSha}\nRepository: ${repoUrl}`);
+        let msg = `📦 **Publish package** \`${packageJson.name}@${packageJson.version}\``;
+        msg += "```\n";
+        msg += `Build time: ${buildTime}\n`;
+        msg += `Short SHA: ${shortSha}\n`;
+        msg += `Repository: ${repoUrl}\n`;
+        msg += `Registry: ${args.registry}\n`;
+        await sendMessageToWebhook(webhook, msg);
     }
 
     if (process.env.GITHUB_OUTPUT) {
@@ -142,13 +148,13 @@ export async function publish(args) {
         if (res.success) {
             logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully.`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `📦 Package ${packageJson.name}@${packageJson.version} published successfully to registry ${args.registry} with tag ${args.tag || '-'}`);
+                await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to <${args.registry}>`);
             }
         }
         else {
             logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `❌ Failed to publish package ${packageJson.name}@${packageJson.version} to registry ${args.registry} with tag ${args.tag || '-'}`);
+                await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
             }
         }
     }
