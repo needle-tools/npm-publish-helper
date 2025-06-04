@@ -2,13 +2,20 @@
 
 Use e.g. in a `package.json` or github action
 
+### In your package.json
 ```json
 {
     "scripts": {
       "prepublishOnly": "npx --yes needle-tools/npm-publish-helper",
-      "compile": "npx --yes needle-tools/npm-publish-helper compile"
+      "compile": "npx --yes needle-tools/npm-publish-helper compile",
     },
 }
+```
+
+### Publish via github workflow
+```yml
+  - name: Run publish command # publish a new version with a tag + git short hash
+    run: npx . publish "path/to/directory" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --version+tag --tag --tag "${{ github.ref_name }}"
 ```
 
 
