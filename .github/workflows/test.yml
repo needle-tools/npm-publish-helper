@@ -28,3 +28,6 @@ jobs:
 
           - name: Run publish command
             run: npx . publish "./test" --tag github --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}"
+
+          - name: Run publish without tag
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}"
