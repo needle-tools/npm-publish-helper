@@ -80,7 +80,8 @@ export async function publish(args) {
             packageJson.version = packageJson.version.substring(0, dashIndex)
         }
         let nextVersion = `${packageJson.version}`;
-        if (args.tag && args.tag !== "latest") {
+        if (args.tag && args.tag !== "latest" && args.useTagInVersion) {
+            logger.info(`Adding tag '${args.tag}' to version.`);
             nextVersion += `-${args.tag}`;
         }
         if (args.useCommitHash && shortSha) {

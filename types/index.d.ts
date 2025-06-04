@@ -22,6 +22,7 @@ export type PublishOptions = {
     accessToken: string | null | undefined;
     tag: string | null | undefined;
     useCommitHash: boolean;
+    useTagInVersion: boolean;
     dryRun: boolean;
     webhookUrl: string | null | undefined;
     overrideName: string | null | undefined;
