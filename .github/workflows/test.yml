@@ -20,5 +20,8 @@ jobs:
               node-version: '20'
               registry-url: 'https://registry.npmjs.org'
 
+          - name: Install dependencies
+            run: npm install
+
           - name: Run publish command
-            run: npm i && npx . publish "./test" --tag next --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --registry "https://registry.npmjs.org"
+            run: npx . publish "./test" --tag next --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --registry "https://registry.npmjs.org"

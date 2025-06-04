@@ -1,14 +1,6 @@
 {
   "name": "publish-helper-test-package",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.44e3f60",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
-  }
+  "license": "ISC"
 }
