@@ -69,14 +69,11 @@ export async function publish(args) {
     const env = {
         ...process.env,
         NPM_TOKEN: args.accessToken || undefined,
-        NPM_CONFIG_REGISTRY: args.registry || 'https://registry.npmjs.org/'
+        NPM_CONFIG_REGISTRY: (args.registry || 'https://registry.npmjs.org/') + "_authToken=" + (args.accessToken || ''),
     }
 
-    // login
-    execSync(`npm login`, {
-        cwd: packageDirectory,
-        env: env
-    });
+    // set config
+    // const configCmd = `npm config set registry ${env.NPM_CONFIG_REGISTRY}:_`;
 
     let packageVersionPublished = null;
     try {
