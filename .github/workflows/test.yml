@@ -21,4 +21,4 @@ jobs:
               registry-url: 'https://registry.npmjs.org'
 
           - name: Run publish command
-            run: npx . publish "/test" --tag next --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --registry "https://registry.npmjs.org"
+            run: npm i && npx . publish "/test" --tag next --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --registry "https://registry.npmjs.org"
