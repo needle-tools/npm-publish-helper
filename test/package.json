@@ -2,5 +2,8 @@
   "name": "publish-helper-test-package",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "ISC"
+  "license": "ISC",
+  "scripts": {
+    "prepublishOnly": "echo 'This is a prepublish script.'"
+  }
 }
