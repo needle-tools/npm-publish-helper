@@ -14,7 +14,7 @@ export function tryExecSync(cmd, options) {
     } catch (error) {
         const oneLineError = error.message.split('\n')[0];
         console.error(`Command failed: ${cmd}\n— Error: "${oneLineError}"`);
-        return { success: false, output: error.message, error: error,  };
+        return { success: false, output: error.message, error: error, };
     }
 }
 
@@ -24,5 +24,5 @@ export function tryExecSync(cmd, options) {
  */
 export function obfuscateToken(token) {
     if (!token) return '';
-    return `${token.slice(0, 2)}***${token.slice(-2)}`;
+    return `${token.slice(0, 2)}${"*".repeat(Math.min(4, token.length - 4))}${token.slice(-2)}`;
 }
