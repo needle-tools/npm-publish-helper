@@ -160,7 +160,7 @@ export async function publish(args) {
 
     // publish package
     let packageVersionPublished = null;
-    let needsPublish = false;
+    let needsPublish = true;
     {
         try {
             const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
@@ -197,7 +197,11 @@ export async function publish(args) {
                 env: env
             });
             // If multiple workflows run at the same time it's possible that the package view command doenst find the package yet but the publish command fails with 403 and a message that the package already exists.
-            if (!res.success && res.error?.toString()?.includes(`You cannot publish over the previously published versions: ${publishVersionString}`)) {
+            if (!res.success
+                && (
+                    res.output?.toString()?.includes(`You cannot publish over the previously published versions: ${publishVersionString}`) ||
+                    res.output?.toString()?.includes(`Failed to save packument. A common cause is if you try to publish a new package before the previous package has been fully processed`)
+                )) {
                 logger.info(`💡 Package ${packageJson.name}@${publishVersionString} already exists, skipping publish.`);
             }
             else if (res.success) {
