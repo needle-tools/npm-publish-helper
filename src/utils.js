@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { appendFileSync } from 'fs';
 
 /**
  * Executes a command synchronously and returns the output.
@@ -57,4 +58,29 @@ export function createCodeBlocks(text, maxLengthPerBlock = 1500) {
     }
 
     return blocks;
+}
+
+
+
+
+
+/**
+ * Writes output variables for CI environments like GitHub Actions.
+ * @param {string} key - The key for the output variable.
+ * @param {string | boolean | number} value - The value for the output variable.
+ * @param {{logger:import('@caporal/core').Logger}} [options] - Additional options, such as whether the package needs to be published.
+ */
+export function tryWriteOutputForCI(key, value, options) {
+    // is github CI?
+    if (process.env.GITHUB_ACTIONS) {
+        if (process.env.GITHUB_OUTPUT) {
+            appendFileSync(process.env.GITHUB_OUTPUT, `${key}=${value}\n`);
+        }
+        else {
+            options?.logger.warn(`GITHUB_OUTPUT environment variable is not set. Cannot set output variables.`);
+        }
+    }
+    else {
+        // Unknown CI environment...
+    }
 }

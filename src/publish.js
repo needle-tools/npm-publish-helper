@@ -2,7 +2,7 @@ import { execSync } from 'child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
-import { createCodeBlocks, obfuscateToken, tryExecSync } from './utils.js';
+import { createCodeBlocks, obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 
 
 /**
@@ -94,10 +94,7 @@ export async function publish(args) {
         await sendMessageToWebhook(webhook, msg, { logger });
     }
 
-    if (process.env.GITHUB_OUTPUT) {
-        appendFileSync(process.env.GITHUB_OUTPUT, `build-time=${buildTime}\n`);
-    }
-
+    tryWriteOutputForCI("build-time", buildTime, { logger });
 
     // Update package version
     {
@@ -297,18 +294,12 @@ export async function publish(args) {
         }
     }
 
-    // is github CI?
-    if (process.env.GITHUB_ACTIONS) {
-        if (process.env.GITHUB_OUTPUT) {
-            logger.info(`Running in GitHub Actions environment. Setting output variables to ${process.env.GITHUB_OUTPUT}`);
-            appendFileSync(process.env.GITHUB_OUTPUT, `package-version=${packageJson.version}\n`);
-            appendFileSync(process.env.GITHUB_OUTPUT, `package-name=${packageJson.name}\n`);
-            appendFileSync(process.env.GITHUB_OUTPUT, `package-published=${needsPublish}\n`);
-        }
-        else {
-            logger.warn(`GITHUB_OUTPUT environment variable is not set. Cannot set output variables.`);
-        }
-    }
+    
+    tryWriteOutputForCI("package-version", packageJson.version, { logger });
+    tryWriteOutputForCI("package-name", packageJson.name, { logger });
+    tryWriteOutputForCI("package-published", needsPublish, { logger });
+
+    logger.info(`✅ Publish process completed for package ${packageJson.name}@${packageJson.version}`);
 }
 
 
