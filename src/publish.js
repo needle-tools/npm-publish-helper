@@ -81,12 +81,14 @@ export async function publish(args) {
 
     if (webhook) {
         const commitMessageOneLiner = commitMessage.replaceAll("\n", " ");
-        let msg = `📦 **Publish package** \`${packageJson.name}\`\n`;
+        const commitUrl = `${repoUrl}/commit/${shortSha}`;
+        let msg = `📦 **Publish package** \`${packageJson.name} [commit](${commitUrl})\`\n`;
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
         msg += `Committer : ${commitAuthorWithEmail}\n`;
         msg += `Commit: "${commitMessageOneLiner?.length > 500 ? (commitMessageOneLiner.substring(0, 500) + "...") : commitMessageOneLiner}"\n`;
+        msg += `Commit URL: ${commitUrl}\n`;
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
