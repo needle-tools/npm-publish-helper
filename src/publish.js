@@ -234,7 +234,14 @@ export async function publish(args) {
     writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
 
     if (args.createGitTag) {
-        const cmd = `git tag -a ${packageJson.version} -m "Published ${packageJson.version}"`;
+
+        let cmd = `git tag -a ${packageJson.version} -m "Published ${packageJson.version}"`;
+
+        // set username and email for git
+        const gitUserName = process.env.GIT_USER_NAME || 'Needle Npm Publish';
+        const gitUserEmail = process.env.GIT_USER_EMAIL || 'hi+git@needle.tools';
+        cmd = `git config user.name "${gitUserName}" && git config user.email "${gitUserEmail}" && ${cmd}`;
+
         logger.info(`Creating git tag with command: ${cmd}`);
         const res = tryExecSync(cmd, {
             cwd: packageDirectory,
@@ -243,7 +250,7 @@ export async function publish(args) {
         if (!res.success) {
             logger.error(`❌ Failed to create git tag: ${res.error}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`: ${res.error}`);
+                await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
             }
         }
     }
