@@ -44,6 +44,7 @@ export async function publish(args) {
     const buildTime = new Date().toISOString();
     const shortSha = tryExecSync('git rev-parse --short HEAD', { cwd: packageDirectory }).output;
     const repoUrl = tryExecSync('git config --get remote.origin.url', { cwd: packageDirectory }).output;
+    const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
 
     logger.info(`Package: ${packageJson.name}@${packageJson.version}`);
     logger.info(`Build time: ${buildTime}`);
@@ -215,7 +216,7 @@ export async function publish(args) {
             if (res.success) {
                 logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `✅ **Set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``);
+                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``);
                 }
             }
             else {
