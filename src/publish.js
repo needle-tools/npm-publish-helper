@@ -77,10 +77,11 @@ export async function publish(args) {
         let msg = `📦 **Publish package** \`${packageJson.name}\`\n`;
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
-        msg += `Short SHA: ${shortSha}\n`;
+        msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
+        msg += `Tag: ${args.tag || 'none'}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
         msg += "```";
         await sendMessageToWebhook(webhook, msg);
     }
