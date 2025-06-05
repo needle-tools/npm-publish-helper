@@ -259,7 +259,7 @@ export async function publish(args) {
 
         let tagName = packageJson.version;
 
-        if (args.createGitTagPrefix !== undefined) {
+        if (args.createGitTagPrefix?.length) {
             if (!args.createGitTagPrefix?.endsWith("/") && !args.createGitTagPrefix?.endsWith("-")) {
                 logger.warn(`Git tag prefix '${args.createGitTagPrefix}' does not end with a slash or dash. Appending '/' to the prefix.`);
                 args.createGitTagPrefix += '/'; // ensure the prefix ends with a slash
