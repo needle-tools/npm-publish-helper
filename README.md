@@ -20,9 +20,9 @@ This is a hidden command that runs `update-npmdef`, then `build` (similar to `co
 
 **Options:**
 
-| Option                | Description                                                     | Default |
-|-----------------------|-----------------------------------------------------------------|---------|
-| `--library <library>` | Specifies the name of the library to build. This is optional. |         |
+| Option                | Type   | Description                                                     | Default |
+|-----------------------|--------|-----------------------------------------------------------------|---------|
+| `--library <library>` | string | Specifies the name of the library to build. This is optional. |         |
 
 ### `compile-library`
 Compiles the library.
@@ -30,9 +30,9 @@ This command can optionally take a library name.
 
 **Options:**
 
-| Option                | Description                                                        | Default |
-|-----------------------|--------------------------------------------------------------------|---------|
-| `--library <library>` | Specifies the name of the library to compile. This is optional. |         |
+| Option                | Type   | Description                                                        | Default |
+|-----------------------|--------|--------------------------------------------------------------------|---------|
+| `--library <library>` | string | Specifies the name of the library to compile. This is optional. |         |
 
 ### `update-npmdef`
 Updates npmdef files.
@@ -44,24 +44,24 @@ Publishes the npm package from the specified directory.
 
 **Arguments:**
 
-| Argument      | Description                                                                    |
-|---------------|--------------------------------------------------------------------------------|
-| `<directory>` | (Required) The path to the directory containing the package to be published. |
+| Argument      | Type   | Description                                                                    |
+|---------------|--------|--------------------------------------------------------------------------------|
+| `<directory>` | string | (Required) The path to the directory containing the package to be published. |
 
 **Options:**
 
-| Option                | Description                                                                                                                                                                       | Default |
-|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `--registry <registry>` | Specifies the NPM registry to use (e.g., `https://registry.npmjs.org/`).                                                                                                         |         |
-| `--tag <tag>`           | Sets the NPM tag to publish the package with (e.g., `latest`, `beta`).                                                                                                            |         |
-| `--version+hash`      | Appends the short git commit hash to the package version. Boolean flag.                                                                                                           | `false` |
-| `--version+tag`       | Appends the git tag name to the package version. Boolean flag.                                                                                                                    | `false` |
-| `--create-tag [prefix]` | Creates a new git tag for the release. An optional prefix can be provided (e.g., `release/`). If the prefix is an empty string, the tag will typically be based on the version. If omitted, no git tag is created. |         |
-| `--webhook <webhook>`   | URL of a webhook to send a notification to after publishing.                                                                                                                      |         |
-| `--access-token <access-token>`| Your NPM access token, required for publishing.                                                                                                                                   |         |
-| `--dry-run`           | Performs a dry run without actually publishing the package to the registry. Boolean flag.                                                                                         | `false` |
-| `--override-name <name>`| Overrides the package name defined in `package.json`.                                                                                                                             |         |
-| `--override-version <version>` | Overrides the package version defined in `package.json`.                                                                                                                     |         |
+| Option                | Type    | Description                                                                                                                                                                       | Default |
+|-----------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `--registry <registry>` | string  | Specifies the NPM registry to use (e.g., `https://registry.npmjs.org/`).                                                                                                         |         |
+| `--tag <tag>`           | string  | Sets the NPM tag to publish the package with (e.g., `latest`, `beta`).                                                                                                            |         |
+| `--version+hash`      | boolean | Appends the short git commit hash to the package version. Boolean flag.                                                                                                           | `false` |
+| `--version+tag`       | boolean | Appends the git tag name to the package version. Boolean flag.                                                                                                                    | `false` |
+| `--create-tag [prefix]` | string  | Creates a new git tag for the release. An optional prefix can be provided (e.g., `release/`). If the prefix is an empty string, the tag will typically be based on the version. If omitted, no git tag is created. |         |
+| `--webhook <webhook>`   | string  | URL of a webhook to send a notification to after publishing.                                                                                                                      |         |
+| `--access-token <access-token>`| string  | Your NPM access token, required for publishing.                                                                                                                                   |         |
+| `--dry-run`           | boolean | Performs a dry run without actually publishing the package to the registry. Boolean flag.                                                                                         | `false` |
+| `--override-name <name>`| string  | Overrides the package name defined in `package.json`.                                                                                                                             |         |
+| `--override-version <version>` | string  | Overrides the package version defined in `package.json`.                                                                                                                     |         |
 
 **Example Github Action Workflow:**
 
