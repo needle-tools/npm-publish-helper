@@ -89,7 +89,7 @@ export async function publish(args) {
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
-        msg += `Tag: ${args.tag || 'none'}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
+        msg += `Tag: ${args.tag || '-'}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
     }
