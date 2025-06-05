@@ -24,7 +24,7 @@ program.command('compile-library', 'Compile library')
         });
     });
 
-program.defaultCommand = program.command('default', 'Compile and update')
+program.command('prepare-publish', 'Compile and update')
     .configure({ visible: false, strictOptions: false })
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
