@@ -183,20 +183,27 @@ export async function publish(args) {
             }
         }
         else {
+            logger.info(`Package view result ${packageVersionPublished}`);
+            
             let cmd = `npm publish --access public`
             if (dryRun) {
                 cmd += ' --dry-run';
                 logger.info(`Dry run mode enabled, not actually publishing package.`);
             }
-            logger.info(`Publishing package ${packageJson.name}@${packageJson.version}: '${cmd}'`);
+            const publishVersionString = packageJson.version;
+            logger.info(`Publishing package ${packageJson.name}@${publishVersionString}: '${cmd}'`);
             const res = tryExecSync(cmd, {
                 cwd: packageDirectory,
                 env: env
             });
-            if (res.success) {
-                logger.info(`📦 Package ${packageJson.name}@${packageJson.version} published successfully: ${htmlUrl}`);
+            // If multiple workflows run at the same time it's possible that the package view command doenst find the package yet but the publish command fails with 403 and a message that the package already exists.
+            if (!res.success && res.error?.toString()?.includes(`You cannot publish over the previously published versions: ${publishVersionString}`)) {
+                logger.info(`💡 Package ${packageJson.name}@${publishVersionString} already exists, skipping publish.`);
+            }
+            else if (res.success) {
+                logger.info(`📦 Package ${packageJson.name}@${publishVersionString} published successfully: ${htmlUrl}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${packageJson.version}\` to ${htmlUrlMarkdown}`);
+                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\` to ${htmlUrlMarkdown}`);
                 }
             }
             else {
