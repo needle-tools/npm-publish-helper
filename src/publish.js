@@ -84,8 +84,8 @@ export async function publish(args) {
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
-        msg += `Last commit author: ${commitAuthorWithEmail}\n`;
-        msg += `Last commit: ${commitMessage}\n`;
+        msg += `Committer : ${commitAuthorWithEmail}\n`;
+        msg += `Commit: ${commitMessage.substring(0, 500)}\n`;
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
