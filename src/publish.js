@@ -238,7 +238,7 @@ export async function publish(args) {
         let cmd = `git tag -a ${packageJson.version} -m "Published ${packageJson.version}"`;
 
         // set username and email for git
-        const gitUserName = process.env.GIT_USER_NAME || 'Needle Npm Publish';
+        const gitUserName = process.env.GITHUB_ACTOR || process.env.GIT_USER_NAME || 'Needle Npm Publish';
         const gitUserEmail = process.env.GIT_USER_EMAIL || 'hi+git@needle.tools';
         cmd = `git config user.name "${gitUserName}" && git config user.email "${gitUserEmail}" && ${cmd}`;
 
@@ -247,7 +247,13 @@ export async function publish(args) {
             cwd: packageDirectory,
             env: env
         });
-        if (!res.success) {
+        if (res.success) {
+            logger.info(`✅ Successfully created git tag: ${packageJson.version}`);
+            if (webhook) {
+                await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${packageJson.version}\` for package \`${packageJson.name}\``);
+            }
+        }
+        else {
             logger.error(`❌ Failed to create git tag: ${res.error}`);
             if (webhook) {
                 await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
