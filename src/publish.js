@@ -155,8 +155,8 @@ export async function publish(args) {
         });
     }
 
-    const htmlUrl = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}` : (args.registry + `/${packageJson.name}`);
-    const htmlUrlMarkdown = `[${htmlUrl.replaceAll("http://", "").replaceAll("https://", "")}](<${htmlUrl}>)`;
+    const htmlUrl = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}/v/${packageJson.version}` : (args.registry + `/${packageJson.name}`);
+    const htmlUrlMarkdown = `[${registryName}/${packageJson.name}@${packageJson.version}](<${htmlUrl}>)`;
 
     // publish package
     let packageVersionPublished = null;
