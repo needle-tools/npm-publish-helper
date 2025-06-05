@@ -281,9 +281,18 @@ export async function publish(args) {
             }
         }
         else {
-            logger.error(`❌ Failed to create git tag: ${res.error}`);
-            if (webhook) {
-                await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
+            const isTagPointingToThisCommit = res.output.includes(`${tagName} -> ${tagName} (already exists)`);
+            if (isTagPointingToThisCommit && res.output?.includes("Updates were rejected because the tag already exists in the remote.")) {
+                logger.info(`💡 Git tag ${packageJson.version} already exists, skipping creation.\n\`\`\`\n${res.error || res.output}\n\`\`\``);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `💡 **Git tag already exists** \`${packageJson.version}\` for package \`${packageJson.name}\``, { logger });
+                }
+            }
+            else {
+                logger.error(`❌ Failed to create git tag: ${res.error}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
+                }
             }
         }
     }
