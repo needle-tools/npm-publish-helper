@@ -193,7 +193,7 @@ export async function publish(args) {
             else {
                 logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
+                    await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
                 }
                 throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
             }
@@ -221,9 +221,9 @@ export async function publish(args) {
                 }
             }
             else {
-                logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+                logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
+                    await sendMessageToWebhook(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
                 }
             }
         }
