@@ -236,7 +236,10 @@ export async function publish(args) {
 
     if (args.createGitTag) {
 
-        const tagName = packageJson.version;
+        let tagName = packageJson.version;
+        if (args.tag) {
+            tagName = `${args.tag}/${tagName}`;
+        }
         let cmd = `git tag -a ${tagName} -m "Published ${packageJson.version}" && git push origin ${tagName}`;
 
         // set username and email for git
