@@ -28,6 +28,7 @@ export type PublishOptions = {
     useHashInVersion: boolean;
     useTagInVersion: boolean;
     createGitTag: boolean;
+    createGitTagPrefix: string | null | undefined;
     dryRun: boolean;
     webhookUrl: string | null | undefined;
     overrideName: string | null | undefined;

@@ -28,7 +28,7 @@ jobs:
 
           - name: Run publish command
             id: publish
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --tag github --version+tag --create-tag
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --tag github --version+tag --create-tag "test/"
 
           - name: Print output 
             run: |
