@@ -297,10 +297,17 @@ export async function publish(args) {
         }
     }
 
-    if (process.env.GITHUB_OUTPUT) {
-        appendFileSync(process.env.GITHUB_OUTPUT, `package-version=${packageJson.version}\n`);
-        appendFileSync(process.env.GITHUB_OUTPUT, `package-name=${packageJson.name}\n`);
-        appendFileSync(process.env.GITHUB_OUTPUT, `package-published=${needsPublish}\n`);
+    // is github CI?
+    if (process.env.GITHUB_ACTIONS) {
+        if (process.env.GITHUB_OUTPUT) {
+            logger.info(`Running in GitHub Actions environment. Setting output variables.`);
+            appendFileSync(process.env.GITHUB_OUTPUT, `package-version=${packageJson.version}\n`);
+            appendFileSync(process.env.GITHUB_OUTPUT, `package-name=${packageJson.name}\n`);
+            appendFileSync(process.env.GITHUB_OUTPUT, `package-published=${needsPublish}\n`);
+        }
+        else {
+            logger.warn(`GITHUB_OUTPUT environment variable is not set. Cannot set output variables.`);
+        }
     }
 }
 
