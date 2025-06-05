@@ -191,10 +191,11 @@ export async function publish(args) {
                 }
             }
             else {
-                logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res}`);
+                logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
                 if (webhook) {
                     await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`: ${res.error}`);
                 }
+                throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
             }
         }
     }
