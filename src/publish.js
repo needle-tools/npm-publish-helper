@@ -264,10 +264,10 @@ export async function publish(args) {
                 logger.warn(`Git tag prefix '${args.createGitTagPrefix}' does not end with a slash or dash. Appending '/' to the prefix.`);
                 args.createGitTagPrefix += '/'; // ensure the prefix ends with a slash
             }
-            tagName = args.createGitTagPrefix + tagName; // use the prefix provided by the user
+            tagName = `${args.createGitTagPrefix}${tagName}`; // use the prefix provided by the user
         }
         else {
-            tagName += "release/" + tagName; // default prefix if no prefix is provided
+            tagName = `release/${tagName}`; // default prefix if no prefix is provided
         }
 
         let cmd = `git tag -a ${tagName} -m "Published ${packageJson.version}" && git push origin ${tagName}`;
