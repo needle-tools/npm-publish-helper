@@ -179,7 +179,7 @@ export async function publish(args) {
         if (!needsPublish) {
             logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` at ${htmlUrlMarkdown}`, { logger });
+                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\`\n→ ${htmlUrlMarkdown}`, { logger });
             }
         }
         else {
@@ -207,7 +207,7 @@ export async function publish(args) {
             else if (res.success) {
                 logger.info(`📦 Package ${packageJson.name}@${publishVersionString} published successfully: ${htmlUrl}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\` to ${htmlUrlMarkdown}`, { logger });
+                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\`\n→ ${htmlUrlMarkdown}`, { logger });
                 }
             }
             else {
