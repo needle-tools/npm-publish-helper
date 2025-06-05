@@ -233,6 +233,20 @@ export async function publish(args) {
     logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
     writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
 
+    if (args.createGitTag) {
+        const cmd = `git tag -a ${packageJson.version} -m "Published ${packageJson.version}"`;
+        logger.info(`Creating git tag with command: ${cmd}`);
+        const res = tryExecSync(cmd, {
+            cwd: packageDirectory,
+            env: env
+        });
+        if (!res.success) {
+            logger.error(`❌ Failed to create git tag: ${res.error}`);
+            if (webhook) {
+                await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`: ${res.error}`);
+            }
+        }
+    }
 
     if (process.env.GITHUB_OUTPUT) {
         appendFileSync(process.env.GITHUB_OUTPUT, `package-version=${packageJson.version}\n`);
