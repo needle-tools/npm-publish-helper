@@ -1,5 +1,5 @@
 {
-  "name": "npm-publish-helper",
+  "name": "needle-publish-helper",
   "version": "1.0.0",
   "type": "module",
   "bin": "./index.js",
@@ -9,5 +9,9 @@
     "esbuild": "^0.25.1",
     "node-fetch": "^3.3.2",
     "vite": "^6.2.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
