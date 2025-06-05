@@ -285,7 +285,7 @@ export async function publish(args) {
         if (res.success) {
             logger.info(`✅ Successfully created git tag: ${packageJson.version}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${packageJson.version}\` for package \`${packageJson.name}\``, { logger });
+                await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${tagName}\` for package \`${packageJson.name}\``, { logger });
             }
         }
         else {
@@ -293,13 +293,13 @@ export async function publish(args) {
             if (isTagPointingToThisCommit && res.output?.includes("Updates were rejected because the tag already exists in the remote.")) {
                 logger.info(`💡 Git tag ${packageJson.version} already exists, skipping creation.\n\`\`\`\n${res.error || res.output}\n\`\`\``);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `💡 **Git tag already exists** \`${packageJson.version}\` for package \`${packageJson.name}\``, { logger });
+                    await sendMessageToWebhook(webhook, `💡 **Git tag already exists** \`${tagName}\` for package \`${packageJson.name}\``, { logger });
                 }
             }
             else {
                 logger.error(`❌ Failed to create git tag: ${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:`, res.error, { logger });
+                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to create git tag** \`${tagName}\`:`, res.error, { logger });
                 }
             }
         }
