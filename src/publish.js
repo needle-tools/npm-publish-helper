@@ -235,7 +235,8 @@ export async function publish(args) {
 
     if (args.createGitTag) {
 
-        let cmd = `git tag -a ${packageJson.version} -m "Published ${packageJson.version}"`;
+        const tagName = packageJson.version;
+        let cmd = `git tag -a ${tagName} -m "Published ${packageJson.version}" && git push origin ${tagName}`;
 
         // set username and email for git
         const gitUserName = process.env.GITHUB_ACTOR || process.env.GIT_USER_NAME || 'Needle Npm Publish';
