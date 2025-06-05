@@ -5,9 +5,10 @@ import fetch from 'node-fetch';
  * Sends a message to a webhook URL (Discord or Slack).
  * @param {string} webhookUrl - The webhook URL to send the message to.
  * @param {string} message - The message to send.
+ * @param {{logger:import('@caporal/core').Logger}} options - Additional arguments
  * @return {Promise<{ success: boolean } |  { success:false, status:number, error: string}>} - A promise that resolves to an object indicating success or failure.
  */
-export function sendMessageToWebhook(webhookUrl, message) {
+export function sendMessageToWebhook(webhookUrl, message, options) {
 
     // Discord
     if (webhookUrl.includes("discord.com/api/webhooks/")) {
@@ -52,6 +53,7 @@ export function sendMessageToWebhook(webhookUrl, message) {
         return handleResponse(res);
     }
 
+    options?.logger.warn(`Unsupported webhook URL: ${webhookUrl}`);
     return Promise.resolve({ success: false, status: 500, error: 'Unsupported webhook URL' });
 
 
@@ -69,6 +71,7 @@ export function sendMessageToWebhook(webhookUrl, message) {
             })
             // Handle network errors
             .catch(error => {
+                options?.logger.error(`Error sending message to webhook: ${error.message}`);
                 return { success: false, status: 500, error: `Failed to send message: ${error.message}` };
             });
     }

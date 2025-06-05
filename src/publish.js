@@ -91,7 +91,7 @@ export async function publish(args) {
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
         msg += `Tag: ${args.tag || 'none'}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
         msg += "```";
-        await sendMessageToWebhook(webhook, msg);
+        await sendMessageToWebhook(webhook, msg, { logger });
     }
 
     if (process.env.GITHUB_OUTPUT) {
@@ -179,12 +179,12 @@ export async function publish(args) {
         if (!needsPublish) {
             logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` at ${htmlUrlMarkdown}`);
+                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\` at ${htmlUrlMarkdown}`, { logger });
             }
         }
         else {
             logger.info(`Package view result ${packageVersionPublished}`);
-            
+
             let cmd = `npm publish --access public`
             if (dryRun) {
                 cmd += ' --dry-run';
@@ -203,13 +203,13 @@ export async function publish(args) {
             else if (res.success) {
                 logger.info(`📦 Package ${packageJson.name}@${publishVersionString} published successfully: ${htmlUrl}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\` to ${htmlUrlMarkdown}`);
+                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\` to ${htmlUrlMarkdown}`, { logger });
                 }
             }
             else {
-                logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+                logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
+                    await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
                 }
                 throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
             }
@@ -233,13 +233,13 @@ export async function publish(args) {
             if (res.success) {
                 logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``);
+                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
                 }
             }
             else {
                 logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
+                    await sendMessageToWebhook(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
                 }
             }
         }
@@ -273,13 +273,13 @@ export async function publish(args) {
         if (res.success) {
             logger.info(`✅ Successfully created git tag: ${packageJson.version}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${packageJson.version}\` for package \`${packageJson.name}\``);
+                await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${packageJson.version}\` for package \`${packageJson.name}\``, { logger });
             }
         }
         else {
             logger.error(`❌ Failed to create git tag: ${res.error}`);
             if (webhook) {
-                await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``);
+                await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
             }
         }
     }
