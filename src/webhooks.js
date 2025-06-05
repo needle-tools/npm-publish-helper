@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { createCodeBlocks } from './utils';
+import { createCodeBlocks } from './utils.js';
 
 
 /**
