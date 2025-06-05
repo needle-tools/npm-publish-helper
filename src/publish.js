@@ -1,8 +1,8 @@
 import { execSync } from 'child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { sendMessageToWebhook } from './webhooks.js';
-import { obfuscateToken, tryExecSync } from './utils.js';
+import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
+import { createCodeBlocks, obfuscateToken, tryExecSync } from './utils.js';
 
 
 /**
@@ -213,7 +213,7 @@ export async function publish(args) {
             else {
                 logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
+                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
                 }
                 throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
             }
@@ -243,7 +243,7 @@ export async function publish(args) {
             else {
                 logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
+                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
                 }
             }
         }
@@ -291,7 +291,7 @@ export async function publish(args) {
             else {
                 logger.error(`❌ Failed to create git tag: ${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:\n\`\`\`\n${res.error}\n\`\`\``, { logger });
+                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to create git tag** \`${packageJson.version}\`:`, res.error, { logger });
                 }
             }
         }
