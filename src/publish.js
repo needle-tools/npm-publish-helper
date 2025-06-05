@@ -44,12 +44,18 @@ export async function publish(args) {
     const buildTime = new Date().toISOString();
     const shortSha = tryExecSync('git rev-parse --short HEAD', { cwd: packageDirectory }).output;
     const repoUrl = tryExecSync('git config --get remote.origin.url', { cwd: packageDirectory }).output;
+    const commitMessage = tryExecSync('git log -1 --pretty=%B', { cwd: packageDirectory }).output.trim();
+    const commitAuthorWithEmail = tryExecSync('git log -1 --pretty="%an <%ae>"', { cwd: packageDirectory }).output.trim();
     const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
 
     logger.info(`Package: ${packageJson.name}@${packageJson.version}`);
     logger.info(`Build time: ${buildTime}`);
     logger.info(`Short SHA: ${shortSha}`);
     logger.info(`Token: '${obfuscateToken(args.accessToken)}'`);
+    logger.info(`Repository: ${repoUrl}`);
+    logger.info(`Last commit message: ${commitMessage}`);
+    logger.info(`Last commit author: ${commitAuthorWithEmail}`);
+    logger.info(`Registry: ${args.registry || 'https://registry.npmjs.org/'}`);
 
     if (!args.accessToken?.length) {
         logger.warn(`No access token provided. Publishing to registry ${args.registry} may fail.`);
@@ -78,6 +84,8 @@ export async function publish(args) {
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
+        msg += `Last commit author: ${commitAuthorWithEmail}\n`;
+        msg += `Last commit: ${commitMessage}\n`;
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
