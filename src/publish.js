@@ -96,6 +96,9 @@ export async function publish(args) {
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
     }
+    else {
+        logger.info(`No webhook URL provided, skipping webhook notifications.`);
+    }
 
     tryWriteOutputForCI("build-time", buildTime, { logger });
 
