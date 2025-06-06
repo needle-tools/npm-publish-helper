@@ -95,6 +95,7 @@ jobs:
         run: npm install
         
       - name: Publish to npm
+        id: publish
         run: npx --yes needle-tools/npm-publish-helper publish "./dist" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --tag "${{github.ref_name}}" --version+tag --version+hash --create-tag release/
 ```
 

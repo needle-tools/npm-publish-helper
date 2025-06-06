@@ -250,11 +250,6 @@ export async function publish(args) {
     }
 
 
-
-    // Restore original package.json
-    logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
-    writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
-
     if (args.createGitTag) {
 
         let tagName = packageJson.version;
@@ -306,10 +301,17 @@ export async function publish(args) {
     }
 
 
+    // Restore original package.json
+    logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
+    writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
+
+
+    // Write outputs for CI
     tryWriteOutputForCI("package-version", packageJson.version, { logger });
     tryWriteOutputForCI("package-name", packageJson.name, { logger });
     tryWriteOutputForCI("package-published", needsPublish, { logger });
 
+    
     logger.info(`✅ Publish process completed for package ${packageJson.name}@${packageJson.version}`);
 }
 
