@@ -188,11 +188,21 @@ export async function publish(args) {
         else {
             logger.info(`Package view result ${packageVersionPublished}`);
 
+
             let cmd = `npm publish --access public`
             if (dryRun) {
                 cmd += ' --dry-run';
                 logger.info(`Dry run mode enabled, not actually publishing package.`);
             }
+            
+            // If the package is a pre-release version, we can use a tag to publish it because we don't want npm to automatically set the tag to 'latest'.
+            const isPrereleaseVersion = packageJson.version.includes('-');
+            if (isPrereleaseVersion) {
+                const prereleaseTag = args.tag || 'dev';
+                logger.info(`Package version is a pre-release version, using tag '${prereleaseTag}' for publishing.`);
+                cmd += ` --tag ${prereleaseTag}`;
+            }
+
             const publishVersionString = packageJson.version;
             logger.info(`Publishing package ${packageJson.name}@${publishVersionString}: '${cmd}'`);
             const res = tryExecSync(cmd, {
