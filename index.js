@@ -41,8 +41,9 @@ program.command('prepare-publish', 'Compile and update')
 program.command('publish', 'Publish npm package')
     .argument('<directory>', 'Directory to publish', { validator: program.STRING })
     .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
-    .option("--tag <tag>", "NPM tag to use", { required: false, validator: program.STRING })
-    .option("--version+hash", "Include hash in version (default: false)", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--tag <tag>", "NPM tag to create/update", { required: false, validator: program.STRING })
+    // .option("--set-latest-tag", "Update the 'latest' tag to the new version (default: undefined). If this option is not defined then the latest tag will only be automatically updated for stable versions (aka non pre-release versions)", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--version+hash", "Include hash in version (default: false)", { required: false, validator: program.BOOLEAN, default: undefined })
     .option("--version+tag", "Include tag in version (default: false)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--create-tag", "Create a git tag. Default: null. Can be set to e.g. '--create-tag release/'", { required: false, validator: program.STRING })
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
@@ -69,6 +70,7 @@ program.command('publish', 'Publish npm package')
             createGitTagPrefix: options.createTag !== undefined ? options.createTag.toString() : null,
             dryRun: options.dryRun === true,
             tag: tag,
+            setLatestTag: undefined, //options.setLatestTag === undefined ? undefined : options.setLatestTag === true,
             webhookUrl: options.webhook?.toString() || null,
             overrideName: options.overrideName?.toString() || null,
             overrideVersion: options.overrideVersion?.toString() || null,

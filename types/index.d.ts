@@ -25,6 +25,7 @@ export type PublishOptions = {
     registry: string;
     accessToken: string | null | undefined;
     tag: string | null | undefined;
+    setLatestTag: boolean | undefined;
     useHashInVersion: boolean;
     useTagInVersion: boolean;
     createGitTag: boolean;
