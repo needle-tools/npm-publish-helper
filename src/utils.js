@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { appendFileSync } from 'fs';
-import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks';
+import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
 
 /**
  * Executes a command synchronously and returns the output.
