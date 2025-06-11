@@ -4,10 +4,24 @@ import caporal from '@caporal/core';
 import { updateNpmdef } from "../src/npmdef.js";
 import { build, compile } from '../src/compile.js';
 import { publish } from '../src/publish.js';
+import { sendMessageToWebhook } from '../src/webhooks.js';
 
 
 export const program = caporal.program;
 program.description('Needle Publish Helper');
+
+
+program.command("send-webhook-message", "Send a message to a webhook")
+    .argument("<webhook>", "Webhook URL", { validator: program.STRING })
+    .argument("<message>", "Message to send", { validator: program.STRING })
+    .action(async ({ logger, args }) => {
+        const webhookUrl = args.webhook.toString();
+        const message = args.message.toString();
+        await sendMessageToWebhook(webhookUrl, message, {
+            logger
+        })
+    });
+
 
 program.command('update-npmdef', 'Update npmdef files')
     .action(async () => {
