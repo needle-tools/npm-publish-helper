@@ -97,6 +97,7 @@ program.command("repository-dispatch", "Invoke a repository dispatch event to tr
     .option("--workflow <workflow>", "Workflow filename or id to invoke", { required: true, validator: program.STRING })
     .option("--ref <ref>", "Git reference (branch, tag, etc.) to use for the dispatch event", { required: false, validator: program.STRING, default: 'main' })
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
+    .option("--inputs <inputs>", "Inputs to pass to the workflow (JSON string)", { required: false, validator: program.STRING, default: '{}' })
     .action(async ({ logger, options }) => {
         const { invokeRepositoryDispatch } = await import('../src/utils.js');
         const res = await invokeRepositoryDispatch({
@@ -105,7 +106,7 @@ program.command("repository-dispatch", "Invoke a repository dispatch event to tr
             ref: options.ref?.toString(),
             workflow: options.workflow.toString(),
             logger,
-            inputs: {},
+            inputs: options.inputs ? JSON.parse(options.inputs.toString()) : {},
             webhookUrl: options.webhook?.toString() || null
         });
         if (!res.success) {
