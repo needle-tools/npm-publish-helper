@@ -2,8 +2,15 @@
   "name": "needle-publish-helper",
   "version": "1.0.0",
   "type": "module",
-  "bin": "./index.js",
-  "types": "./index.d.ts",
+  "bin": "./bin/cli.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./src/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
   "dependencies": {
     "@caporal/core": "^2.0.7",
     "esbuild": "^0.25.1",

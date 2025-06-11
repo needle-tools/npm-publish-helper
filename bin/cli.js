@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 import caporal from '@caporal/core';
-
-import { updateNpmdef } from "./src/npmdef.js";
-import { build, compile } from './src/compile.js';
-import { publish } from './src/publish.js';
+import { updateNpmdef } from "../src/npmdef.js";
+import { build, compile } from '../src/compile.js';
+import { publish } from '../src/publish.js';
 
 
 export const program = caporal.program;
-program.description('Npm Publish Helper');
+program.description('Needle Publish Helper');
 
 program.command('update-npmdef', 'Update npmdef files')
     .action(async () => {
