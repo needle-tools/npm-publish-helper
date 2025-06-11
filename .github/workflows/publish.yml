@@ -26,3 +26,6 @@ jobs:
 
           - name: Run publish command
             run: npx . publish "." --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --create-tag --tag ${{ github.ref_name }}
+
+          - name: Dispatch sveltekit
+            run: npx . repository-dispatch --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NEEDLE_ENGINE_ACTIONS_ACCESS_TOKEN }}" --repository needle-engine/sveltekit-sample --workflow test.yml  --ref test

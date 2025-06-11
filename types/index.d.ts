@@ -35,3 +35,14 @@ export type PublishOptions = {
     overrideName: string | null | undefined;
     overrideVersion: string | null | undefined;
 }
+
+
+export type RepositoryDispatchOptions = {
+    logger: Logger;
+    accessToken: string;
+    repository: string;
+    ref?: string;
+    workflow: string;
+    inputs?: Record<string, any>;
+    webhookUrl?: string | null | undefined;
+}

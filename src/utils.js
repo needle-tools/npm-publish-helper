@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 import { appendFileSync } from 'fs';
+import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks';
 
 /**
  * Executes a command synchronously and returns the output.
@@ -90,12 +91,12 @@ export function tryWriteOutputForCI(key, value, options) {
 
 /**
  * Invokes a repository dispatch event in another repository to trigger a workflow.
- * @param {{logger:import('@caporal/core').Logger, repository:string, access_token:string, ref?:string, workflow:string, inputs?:Record<string, any>}} options
+ * @param {import('../types').RepositoryDispatchOptions} options
  * @returns {{success: boolean, error?: string | Error}}
  */
 export function invokeRepositoryDispatch(options) {
 
-    const { logger, repository, access_token, ref, workflow, inputs } = options;
+    const { logger, repository, accessToken, ref, workflow, inputs } = options;
 
     // https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event
 
@@ -106,12 +107,12 @@ export function invokeRepositoryDispatch(options) {
             ...inputs, // Spread any additional inputs provided
         }
     });
-    const cmd = `curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${access_token}" -H "X-GitHub-Api-Version: 2022-11-28" ${url} -H 'Content-Type: application/json' -d "${body.replaceAll('"', '\\"')}"`;
+    const cmd = `curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${accessToken}" -H "X-GitHub-Api-Version: 2022-11-28" ${url} -H "Content-Type: application/json" -d "${body.replaceAll('"', '\\"')}"`;
 
     logger.debug(`
 ---
 Invoking repository dispatch with command:
-${cmd.replaceAll(/Authorization.+Bearer [^ ]+/g, `Authorization Bearer ${obfuscateToken(access_token)}`)}
+${cmd.replaceAll(/Authorization.+Bearer [^ ]+/g, `Authorization Bearer ${obfuscateToken(accessToken)}`)}
 ---
 `);
 
@@ -121,8 +122,16 @@ ${cmd.replaceAll(/Authorization.+Bearer [^ ]+/g, `Authorization Bearer ${obfusca
             maxBuffer: 1024 * 1024 * 10, // 10 MB
         }, { logError: false });
     if (!res.success) {
+        if (options.webhookUrl) {
+            sendMessageToWebhookWithError(options.webhookUrl, `**Failed to invoke repository dispatch**:`, res.error, { logger });
+        }
         return { success: false, error: res.error };
     }
 
+    logger.debug(`Repository dispatch invoked successfully for workflow: ${workflow} in repository: ${repository}`);
+    if (options.webhookUrl) {
+        const repositoryWorkflowUrl = `https://github.com/${repository}/actions/workflows/${workflow}`;
+        sendMessageToWebhook(options.webhookUrl, `🤖 **Repository dispatch** invoked successfully for workflow: [${workflow}](<${repositoryWorkflowUrl}>) in repository: ${repository}`, { logger });
+    }
     return { success: true };
 }

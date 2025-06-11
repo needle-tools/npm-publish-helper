@@ -96,15 +96,17 @@ program.command("repository-dispatch", "Invoke a repository dispatch event to tr
     .option("--repository <repository>", "Repository to invoke the dispatch event in", { required: true, validator: program.STRING })
     .option("--workflow <workflow>", "Workflow filename or id to invoke", { required: true, validator: program.STRING })
     .option("--ref <ref>", "Git reference (branch, tag, etc.) to use for the dispatch event", { required: false, validator: program.STRING, default: 'main' })
+    .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
     .action(async ({ logger, options }) => {
         const { invokeRepositoryDispatch } = await import('../src/utils.js');
         const res = await invokeRepositoryDispatch({
-            access_token: options.accessToken.toString(),
+            accessToken: options.accessToken.toString(),
             repository: options.repository.toString(),
             ref: options.ref?.toString(),
             workflow: options.workflow.toString(),
             logger,
-            inputs: {}
+            inputs: {},
+            webhookUrl: options.webhook?.toString() || null
         });
         if (!res.success) {
             logger.error(`Failed to invoke repository dispatch: ${res.error}`);
