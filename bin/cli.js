@@ -91,5 +91,27 @@ program.command('publish', 'Publish npm package')
     });
 
 
+program.command("repository-dispatch", "Invoke a repository dispatch event to trigger a workflow")
+    .option("--repository <repository>", "Repository to invoke the dispatch event in", { required: true, validator: program.STRING })
+    .option("--workflow <workflow>", "Workflow name or id to invoke", { required: true, validator: program.STRING })
+    .option("--access-token <access-token>", "Access token to use for the dispatch event", { required: true, validator: program.STRING })
+    .option("--ref <ref>", "Git reference (branch, tag, etc.) to use for the dispatch event", { required: false, validator: program.STRING, default: 'main' })
+    .action(async ({ logger, options }) => {
+        const { invokeRepositoryDispatch } = await import('../src/utils.js');
+        const res = await invokeRepositoryDispatch({
+            repository: options.repository.toString(),
+            access_token: options.accessToken.toString(),
+            workflow: options.workflow.toString(),
+            logger,
+            ref: options.ref?.toString(),
+            inputs: {}
+        });
+        if (!res.success) {
+            logger.error(`Failed to invoke repository dispatch: ${res.error}`);
+        } else {
+            logger.info(`Repository dispatch invoked successfully for workflow: ${options.workflow}`);
+        }
+    });
+
 
 program.run();

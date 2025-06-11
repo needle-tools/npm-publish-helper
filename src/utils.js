@@ -5,16 +5,17 @@ import { appendFileSync } from 'fs';
  * Executes a command synchronously and returns the output.
  * If the command fails, it returns the error instead of throwing it.
  * @param {string} cmd - The command to execute.
- * @param {import('child_process').ExecSyncOptionsWithBufferEncoding} [options] - Optional options for execSync.
+ * @param {import('child_process').ExecSyncOptionsWithBufferEncoding | import("child_process").ExecOptionsWithStringEncoding} [execOptions] - Optional options for execSync.
+ * @param {{logError?:boolean}} [options] - Additional options
  * @return {{success: false, error:string|Error, output:string } | {success: true, output:string}} - The output of the command as a string, or an Error object if the command fails.
  */
-export function tryExecSync(cmd, options) {
+export function tryExecSync(cmd, execOptions, options = {}) {
     try {
-        const res = execSync(cmd, options).toString().trim();
+        const res = execSync(cmd, execOptions).toString().trim();
         return { success: true, output: res };
     } catch (error) {
         const oneLineError = error.message.split('\n')[0];
-        console.error(`Command failed: ${cmd}\n— Error: "${oneLineError}"`);
+        if (options?.logError !== false) console.error(`Command failed: ${cmd}\n— Error: "${oneLineError}"`);
         return { success: false, output: error.message, error: error, };
     }
 }
@@ -83,4 +84,45 @@ export function tryWriteOutputForCI(key, value, options) {
     else {
         // Unknown CI environment...
     }
+}
+
+
+
+/**
+ * Invokes a repository dispatch event in another repository to trigger a workflow.
+ * @param {{logger:import('@caporal/core').Logger, repository:string, access_token:string, ref?:string, workflow:string, inputs?:Record<string, any>}} options
+ * @returns {{success: boolean, error?: string | Error}}
+ */
+export function invokeRepositoryDispatch(options) {
+
+    const { logger, repository, access_token, ref, workflow, inputs } = options;
+
+    // https://docs.github.com/en/rest/actions/workflows?apiVersion=2022-11-28#create-a-workflow-dispatch-event
+
+    const url = `https://api.github.com/repos/${repository}/actions/workflows/${workflow}/dispatches`;
+    const body = JSON.stringify({
+        ref: ref || 'main', // Default to 'main' branch if not specified
+        inputs: {
+            ...inputs, // Spread any additional inputs provided
+        }
+    });
+    const cmd = `curl -L -X POST -H "Accept: application/vnd.github+json" -H "Authorization: Bearer ${access_token}" -H "X-GitHub-Api-Version: 2022-11-28" ${url} -H 'Content-Type: application/json' -d "${body.replaceAll('"', '\\"')}"`;
+
+    logger.debug(`
+---
+Invoking repository dispatch with command:
+${cmd.replaceAll(/Authorization.+Bearer [^ ]+/g, `Authorization Bearer ${obfuscateToken(access_token)}`)}
+---
+`);
+
+    const res = tryExecSync(cmd,
+        {
+            encoding: 'utf8',
+            maxBuffer: 1024 * 1024 * 10, // 10 MB
+        }, { logError: false });
+    if (!res.success) {
+        return { success: false, error: res.error };
+    }
+
+    return { success: true };
 }
