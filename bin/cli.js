@@ -3,7 +3,6 @@
 import caporal from '@caporal/core';
 import { updateNpmdef } from "../src/npmdef.js";
 import { build, compile } from '../src/compile.js';
-import { publish } from '../src/publish.js';
 import { sendMessageToWebhook } from '../src/webhooks.js';
 
 
@@ -66,6 +65,7 @@ program.command('publish', 'Publish npm package')
     .option("--override-version <version>", "Override package version", { required: false, validator: program.STRING })
     // .option("--exec-before", "Allow running a command before publishing (e.g. 'npm run ...')", { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
+        const { publish } = await import('../src/publish.js');
         const directory = (args.directory || process.cwd()).toString();
         const registry = (options.registry || 'https://registry.npmjs.org/').toString();
         const tag = options.tag?.toString() || null;
@@ -92,18 +92,18 @@ program.command('publish', 'Publish npm package')
 
 
 program.command("repository-dispatch", "Invoke a repository dispatch event to trigger a workflow")
+    .option("--access-token <access-token>", "Access token to use for the dispatch event.\nA fine-grained access token to give access to the repositories you want to invoke the workflow for.\nPermissions required: Actions=read/write, Contents=read/write", { required: true, validator: program.STRING })
     .option("--repository <repository>", "Repository to invoke the dispatch event in", { required: true, validator: program.STRING })
-    .option("--workflow <workflow>", "Workflow name or id to invoke", { required: true, validator: program.STRING })
-    .option("--access-token <access-token>", "Access token to use for the dispatch event", { required: true, validator: program.STRING })
+    .option("--workflow <workflow>", "Workflow filename or id to invoke", { required: true, validator: program.STRING })
     .option("--ref <ref>", "Git reference (branch, tag, etc.) to use for the dispatch event", { required: false, validator: program.STRING, default: 'main' })
     .action(async ({ logger, options }) => {
         const { invokeRepositoryDispatch } = await import('../src/utils.js');
         const res = await invokeRepositoryDispatch({
-            repository: options.repository.toString(),
             access_token: options.accessToken.toString(),
+            repository: options.repository.toString(),
+            ref: options.ref?.toString(),
             workflow: options.workflow.toString(),
             logger,
-            ref: options.ref?.toString(),
             inputs: {}
         });
         if (!res.success) {
