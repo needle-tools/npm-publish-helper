@@ -131,7 +131,14 @@ export async function publish(args) {
             // the package version can only be updated if it's different
             const cmd = `npm version ${nextVersion} --no-git-tag-version`;
             logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
-            execSync(cmd, { cwd: packageDirectory });
+            const res = tryExecSync(cmd, { cwd: packageDirectory });
+            if (!res.success) {
+                logger.error(`Failed to update package version: ${res.error}`);
+                if (webhook) {
+                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to update package version** \`${packageJson.name}\`:`, res.error, { logger });
+                }
+                throw new Error(`Failed to update package version: ${res.error}`);
+            }
         }
         // ensure the version is set correctly (it might have been modified in the meantime)
         packageJson.version = nextVersion;
