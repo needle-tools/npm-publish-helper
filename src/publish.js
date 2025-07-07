@@ -130,7 +130,7 @@ export async function publish(args) {
         if (currentVersion !== nextVersion) {
             // the package version can only be updated if it's different
             const cmd = `npm version ${nextVersion} --no-git-tag-version`;
-            logger.info(`Updating package version to ${nextVersion} with command: ${cmd}`);
+            logger.info(`Updating package version to \"${nextVersion}\" with command \"${cmd}\"`);
             const res = tryExecSync(cmd, { cwd: packageDirectory });
             if (!res.success) {
                 logger.error(`Failed to update package version: ${res.error}`);
