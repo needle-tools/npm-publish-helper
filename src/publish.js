@@ -4,6 +4,7 @@ import { resolve } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
 import { createCodeBlocks, obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
+import { trySummarize } from './utils.llm.js';
 
 
 /**
@@ -50,8 +51,18 @@ export async function publish(args) {
     const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
 
     try {
-        const commits = getDiffSinceLastPush(packageDirectory, { logger });
-        logger.info(`COMMITS:\n${commits}`);
+        if (process.env.LLM_API_KEY) {
+            const commits = getDiffSinceLastPush(packageDirectory, { logger });
+            logger.info(`COMMITS:\n${commits}`);
+            if (commits) {
+                const res = await trySummarize("commit", commits);
+                if (res.success) {
+                    logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
+                    // if (webhook)
+                    //     sendMessageToWebhook(webhook, `📝 **Commit Summary** for package \`${packageJson.name}\`:\n${createCodeBlocks(res.summary)}`, { logger });
+                }
+            }
+        }
     }
     catch (err) {
         logger.error(`Failed to get changes since last push: ${err.message}`);
