@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
 import { createCodeBlocks, obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
+import { getDiffSinceLastPush } from './utils.git.js';
 
 
 /**
@@ -47,6 +48,16 @@ export async function publish(args) {
     const commitMessage = tryExecSync('git log -1 --pretty=%B', { cwd: packageDirectory }).output.trim();
     const commitAuthorWithEmail = tryExecSync('git log -1 --pretty="%an <%ae>"', { cwd: packageDirectory }).output.trim();
     const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
+
+    try {
+        const commits = getDiffSinceLastPush(packageDirectory);
+        console.log(`Changes since last push:\n${createCodeBlocks(commits)}`);
+    }
+    catch (err) {
+        console.error(`Failed to get changes since last push: ${err.message}`);
+    }
+
+
 
     logger.info(`Package: ${packageJson.name}@${packageJson.version}`);
     logger.info(`Build time: ${buildTime}`);
