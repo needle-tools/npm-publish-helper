@@ -7,14 +7,15 @@ import { execSync } from 'child_process';
 export function getDiffSinceLastPush(directory) {
     let branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: directory }).toString().trim();
     if (!branch) {
-        throw new Error(`Could not determine current branch in directory ${directory}`);
+        console.error(`Failed to get current branch in directory: ${directory}`);
+        return null;
     }
 
     branch = "origin/" + branch; // Ensure we are looking at the remote branch
 
     // Use reflog to find the last push to origin/branch
     const command = `git reflog show ${branch} --pretty=format:"%h %gs"`;
-    const output = execSync(command, { cwd: directory }).toString().trim();
+    const output = execSync(command, { cwd: directory })?.toString().trim();
 
     if (!output) {
         console.error(`No reflog entries found for branch ${branch}`);
@@ -39,7 +40,7 @@ export function getDiffSinceLastPush(directory) {
 
     // Get diff of files changed since the last push including changes
     const diffCommand = `git diff ${lastPushHash}..HEAD`;
-    const diffOutput = execSync(diffCommand, { cwd: directory }).toString().trim();
+    const diffOutput = execSync(diffCommand, { cwd: directory })?.toString().trim();
 
     if (!diffOutput) {
         return null;
