@@ -63,6 +63,9 @@ export async function publish(args) {
                 }
             }
         }
+        else {
+            logger.warn(`No LLM API key provided, skipping commit summarization.`);
+        }
     }
     catch (err) {
         logger.error(`Failed to get changes since last push: ${err.message}`);

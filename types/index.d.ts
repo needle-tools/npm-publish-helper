@@ -34,6 +34,9 @@ export type PublishOptions = {
     webhookUrl: string | null | undefined;
     overrideName: string | null | undefined;
     overrideVersion: string | null | undefined;
+    llm?: {
+        apiKey: string | null | undefined;
+    }
 }
 
 
