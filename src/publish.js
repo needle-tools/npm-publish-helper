@@ -50,11 +50,11 @@ export async function publish(args) {
     const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
 
     try {
-        const commits = getDiffSinceLastPush(packageDirectory);
-        console.log(`Changes since last push:\n${commits}`);
+        const commits = getDiffSinceLastPush(packageDirectory, { logger });
+        logger.info(`COMMITS:\n${commits}`);
     }
     catch (err) {
-        console.error(`Failed to get changes since last push: ${err.message}`);
+        logger.error(`Failed to get changes since last push: ${err.message}`);
     }
 
 
