@@ -6,22 +6,38 @@ import { execSync } from 'child_process';
  */
 export function getDiffSinceLastPush(directory) {
 
+    const originName = "origin";
+
+    // Use GitHub event context to get the base commit
+    const baseRef = process.env.GITHUB_BASE_REF || 'HEAD~1';
+    const headRef = process.env.GITHUB_HEAD_REF || 'HEAD';
+    // If it's a pull request, use the base branch
+    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+        console.log(`Using base ref: ${baseRef} and head ref: ${headRef}`);
+        return getDiff(directory, `${originName}/${baseRef}`, headRef);
+    }
+
+    // If not a pull request, use the GITHUB_EVENT_BEFORE and GITHUB_SHA environment variables
     const beforeSha = process.env.GITHUB_EVENT_BEFORE;
     const afterSha = process.env.GITHUB_SHA;
-
     console.log(`Using GITHUB_EVENT_BEFORE: ${beforeSha}`);
-
     if (beforeSha && afterSha && beforeSha !== '0000000000000000000000000000000000000000') {
         return getDiff(directory, beforeSha, afterSha);
     }
 
+
+    // First fetch changes
+    execSync(`git fetch --unshallow --no-tags ${originName}`, { cwd: directory });
+
+
+    // If no specific refs are provided, get the current branch
     let branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: directory }).toString().trim();
     if (!branch) {
         console.error(`Failed to get current branch in directory: ${directory}`);
         return null;
     }
 
-    branch = `origin/${branch}`; // Ensure we are looking at the remote branch
+    branch = `${originName}/${branch}`; // Ensure we are looking at the remote branch
 
     // Use reflog to find the last push to origin/branch
     const command = `git reflog show ${branch} --pretty=format:"%h %gs"`;
