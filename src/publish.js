@@ -51,17 +51,23 @@ export async function publish(args) {
     const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
 
     try {
-        if (process.env.LLM_API_KEY) {
+        if (args.llm?.apiKey) {
             const commits = getDiffSinceLastPush(packageDirectory, { logger });
             logger.info(`COMMITS:\n${commits}`);
             if (commits) {
-                const res = await trySummarize("commit", commits);
+                const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey });
                 if (res.success) {
                     logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
                     // if (webhook)
                     //     sendMessageToWebhook(webhook, `📝 **Commit Summary** for package \`${packageJson.name}\`:\n${createCodeBlocks(res.summary)}`, { logger });
                 }
+                else {
+                    logger.error(`Failed to summarize commits: ${res.error}`);
+                }
             }
+        }
+        else {
+            logger.warn(`No LLM API key provided, skipping commit summarization.`);
         }
     }
     catch (err) {

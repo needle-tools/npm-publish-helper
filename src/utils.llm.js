@@ -8,10 +8,11 @@
 /**
  * @param {SummarizationType} type - The type of summarization to perform.
  * @param {string} text - The text to summarize.
+ * @param { { api_key?: string } } options - Additional options, including the LLM API key.
  * @returns {Promise<Output>} - The result of the summarization.
  */
-export async function trySummarize(type, text) {
-    const api_key = process.env.LLM_API_KEY;
+export async function trySummarize(type, text, options) {
+    const api_key = options?.api_key || process.env.LLM_API_KEY;
     if (!api_key) {
         return { success: false, error: "No LLM API key provided" };
     }
