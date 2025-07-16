@@ -58,11 +58,11 @@ export async function publish(args) {
                 const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey });
                 if (res.success) {
                     logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
-                    // if (webhook)
-                    //     sendMessageToWebhook(webhook, `📝 **Commit Summary** for package \`${packageJson.name}\`:\n${createCodeBlocks(res.summary)}`, { logger });
+                    if (webhook)
+                        sendMessageToWebhook(webhook, `📝 **Commit Summary** for package \`${packageJson.name}\`:\n${createCodeBlocks(res.summary)}`, { logger });
                 }
                 else {
-                    logger.error(`Failed to summarize commits: ${res.error}`);
+                    logger.error(`Failed to summarize commits: ${res.error} (Status: ${res.status})`);
                 }
             }
         }

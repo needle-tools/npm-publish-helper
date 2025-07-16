@@ -2,7 +2,7 @@
 
 /**
  * @typedef {"changelog" | "commit"} SummarizationType
- * @typedef { { success: true, summary:string } | { success: false, error: string } } Output
+ * @typedef { { success: true, summary:string } | { success: false, error: string, status: number } } Output
  */
 
 /**
@@ -14,19 +14,19 @@
 export async function trySummarize(type, text, options) {
     const api_key = options?.api_key || process.env.LLM_API_KEY;
     if (!api_key) {
-        return { success: false, error: "No LLM API key provided" };
+        return { success: false, error: "No LLM API key provided", status: 400 };
     }
 
     const prompt = getPrompt(type);
     if (!prompt) {
-        return { success: false, error: `No prompt defined for summarization type: ${type}` };
+        return { success: false, error: `No prompt defined for summarization type: ${type}`, status: 400 };
     }
 
     if (api_key.startsWith("sk-")) {
         return await summarizeDeepSeek(api_key, prompt, text);
     }
 
-    return { success: false, error: "LLM API not supported yet" };
+    return { success: false, error: "LLM API not supported yet", status: 501 };
 }
 
 
@@ -37,9 +37,9 @@ export async function trySummarize(type, text, options) {
 function getPrompt(type) {
     switch (type) {
         case "changelog":
-            return "Generate a concise changelog summary from the provided text. Only include the most important changes and improvements.";
+            return "Generate a concise changelog summary from the provided text. Only include the most important changes and improvements. Use prefixes like 'Added:', 'Fixed:', 'Changed:' to categorize changes. Use bullet points for multiple changes if necessary and if appropriate code snippets or examples of how to use new or updated features.";
         case "commit":
-            return "Generate a concise commit message from the provided text. Focus on the key changes and improvements made.";
+            return "Generate a concise commit message from the provided text - summarize the changes made in a clear and informative way. Use the commit description to explain the purpose and impact of the changes. Use bullet points for multiple changes if necessary. Use prefixs like 'Added:', 'Fixed:', 'Changed:' to categorize changes.";
         default:
             return null;
     }
@@ -74,12 +74,12 @@ async function summarizeDeepSeek(api_key, prompt, text) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            return { success: false, error: `API Error: ${errorText}` };
+            return { success: false, error: `API Error: ${errorText}`, status: response.status };
         }
 
         const data = await response.json();
         return { success: true, summary: data.choices[0].message.content.trim() };
     } catch (error) {
-        return { success: false, error: `Fetch Error: ${error.message}` };
+        return { success: false, error: `Fetch Error: ${error.message}`, status: 500 };
     }
 }
