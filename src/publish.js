@@ -51,7 +51,7 @@ export async function publish(args) {
 
     try {
         const commits = getDiffSinceLastPush(packageDirectory);
-        console.log(`Changes since last push:\n${createCodeBlocks(commits)}`);
+        console.log(`Changes since last push:\n${commits}`);
     }
     catch (err) {
         console.error(`Failed to get changes since last push: ${err.message}`);

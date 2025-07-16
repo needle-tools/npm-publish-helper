@@ -34,7 +34,7 @@ export function getDiffSinceLastPush(directory) {
     }
 
     if (!lastPushHash) {
-        console.error(`No last push found for branch ${branch}`);
+        console.error(`No last push found for branch ${branch}\nReflog entries:\n${output}`);
         return null;
     }
 
