@@ -27,8 +27,7 @@ export function getDiffSinceLastPush(directory) {
 
 
     // First fetch changes
-    execSync(`git fetch --unshallow --no-tags ${originName}`, { cwd: directory });
-
+    tryFetch(directory, originName);
 
     // If no specific refs are provided, get the current branch
     let branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: directory }).toString().trim();
@@ -45,7 +44,9 @@ export function getDiffSinceLastPush(directory) {
 
     if (!output) {
         console.error(`No reflog entries found for branch ${branch}`);
-        return null;
+        // Final fallback: compare with previous commit
+        console.log('Falling back to HEAD~1..HEAD');
+        return getDiff(directory, "HEAD~1", "HEAD");
     }
 
     const lines = output.split('\n');
@@ -61,12 +62,32 @@ export function getDiffSinceLastPush(directory) {
 
     if (!lastPushHash) {
         console.error(`No last push found for branch ${branch}\nReflog entries:\n${output}`);
-        return null;
+        // Final fallback: compare with previous commit
+        console.log('Falling back to HEAD~1..HEAD');
+        return getDiff(directory, "HEAD~1", "HEAD");
     }
 
     return getDiff(directory, lastPushHash, "HEAD");
 }
 
+
+function tryFetch(directory, originName) {
+    // Try to fetch more history if needed (handle both shallow and complete repos)
+    try {
+        // Check if repo is shallow first
+        const isShallow = execSync('git rev-parse --is-shallow-repository', { cwd: directory }).toString().trim();
+
+        if (isShallow === 'true') {
+            console.log('Repository is shallow, fetching more history...');
+            execSync(`git fetch --unshallow --no-tags ${originName}`, { cwd: directory });
+        } else {
+            console.log('Repository is complete, fetching latest changes...');
+            execSync(`git fetch --no-tags ${originName}`, { cwd: directory });
+        }
+    } catch (error) {
+        console.warn(`Failed to fetch: ${error.message}`);
+    }
+}
 
 
 /**
