@@ -62,7 +62,7 @@ async function summarizeDeepSeek(api_key, prompt, text) {
                 "Authorization": `Bearer ${api_key}`
             },
             body: JSON.stringify({
-                model: "deepseek-chat-3.5-turbo",
+                model: "deepseek-chat",
                 messages: [
                     { role: "system", content: prompt },
                     { role: "user", content: text }
