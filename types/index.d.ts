@@ -73,6 +73,7 @@ export type GithubEventData = {
     before: string;
     base_ref: string | null;
     commits: Array<GithubCommit>;
+    /** The compare URL for the commit range */
     compare: string;
     created: boolean;
     deleted: boolean;

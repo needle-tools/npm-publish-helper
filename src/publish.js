@@ -5,6 +5,7 @@ import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.
 import { createCodeBlocks, obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
 import { trySummarize } from './utils.llm.js';
+import { tryLoadGithubEventData } from './utils.github.js';
 
 
 /**
@@ -17,6 +18,7 @@ export async function publish(args) {
     const packageDirectory = resolve(args.packageDirectory || process.cwd());
     const packageJsonPath = `${packageDirectory}/package.json`;
     const dryRun = args.dryRun || false;
+    const event_data = tryLoadGithubEventData({ logger });
 
     const packageExists = existsSync(packageJsonPath);
     if (!packageExists) {
@@ -111,8 +113,8 @@ export async function publish(args) {
 
     if (webhook) {
         const commitMessageOneLiner = commitMessage?.trim().replaceAll("\n", " ");
-        const commitUrl = `${repoUrl}/commit/${shortSha}`;
-        let msg = `🐱‍💻 **Publish package** \`${packageJson.name}\` [commit](<${commitUrl}>)\n`;
+        const commitUrl = event_data?.compare || `${repoUrl}/commit/${shortSha}`;
+        let msg = `🐱‍💻 **Publish package** ${packageJson.name} – [commit](<${commitUrl}>)\n`;
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
