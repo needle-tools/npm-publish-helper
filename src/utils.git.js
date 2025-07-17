@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import { tryLoadGithubEventData } from './utils.github.js';
 
 /**
  * Get the list of files changed on the current branch since the last push.
@@ -11,7 +12,10 @@ export function getDiffSinceLastPush(directory, options) {
 
     const originName = "origin";
 
+    const event_data = tryLoadGithubEventData({ logger });
+
     console.log(process.env);
+    console.log(event_data);
 
     // Use GitHub event context to get the base commit
     const baseRef = process.env.GITHUB_BASE_REF || 'HEAD~1';
