@@ -114,7 +114,7 @@ export async function publish(args) {
     if (webhook) {
         const commitMessageOneLiner = commitMessage?.trim().replaceAll("\n", " ");
         const commitUrl = event_data?.compare || `${repoUrl}/commit/${shortSha}`;
-        let msg = `🐱‍💻 **Publish package** ${packageJson.name} – [commit](<${commitUrl}>)\n`;
+        let msg = `🐱‍💻 **Publish package** (\`${packageJson.name}\`) – [commit](<${commitUrl}>)\n`;
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
@@ -128,7 +128,7 @@ export async function publish(args) {
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
         if (llm_summary) {
-            msg = `📝 **Changes summary** for \`${packageJson.name}\`:\n\`\`\`\n${llm_summary}\n\`\`\``;
+            msg = `📝 **Changes summary** for (\`${packageJson.name}\`):\n\`\`\`\n${llm_summary}\n\`\`\``;
             await sendMessageToWebhook(webhook, msg, { logger });
         }
     }
