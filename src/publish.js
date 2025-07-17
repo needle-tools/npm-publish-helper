@@ -117,7 +117,7 @@ export async function publish(args) {
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
         msg += `Committer : ${commitAuthorWithEmail}\n`;
-        msg += `Commit: "${commitMessageOneLiner?.length > 254 ? (commitMessageOneLiner.substring(0, 254) + "...") : commitMessageOneLiner}"\n`;
+        msg += `Commit: "${commitMessageOneLiner?.length > 254 ? (commitMessageOneLiner.substring(0, 254) + "...") : commitMessageOneLiner}"\n`.replaceAll("`", "'");
         msg += `Commit URL: ${commitUrl}\n`;
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
