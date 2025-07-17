@@ -129,7 +129,7 @@ export async function publish(args) {
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
         if (llm_summary) {
-            msg = `📝 **Changes summary** for *${packageJson.name}*:\n\`\`\`\n${llm_summary}\n\`\`\``;
+            msg = `📝 **Changes summary** for \`${packageJson.name}\`:\n\`\`\`\n${llm_summary}\n\`\`\``;
             await sendMessageToWebhook(webhook, msg, { logger });
         }
     }
