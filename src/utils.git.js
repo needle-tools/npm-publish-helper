@@ -13,8 +13,6 @@ export function getDiffSinceLastPush(directory, options) {
     const originName = "origin";
 
     const event_data = tryLoadGithubEventData({ logger });
-
-    console.log(process.env);
     console.log(event_data);
 
     // Use GitHub event context to get the base commit
