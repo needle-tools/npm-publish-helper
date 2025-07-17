@@ -39,7 +39,10 @@ function getPrompt(type) {
         case "changelog":
             return "Generate a concise changelog summary from the provided text. Only include the most important changes and improvements. Use prefixes like 'Added:', 'Fixed:', 'Changed:' to categorize changes, ordered by type. Use bullet points for multiple changes if necessary and if appropriate code snippets or examples of how to use new or updated features.";
         case "commit":
-            return "Generate a concise commit message from the provided text - summarize the changes made in a clear and informative way. Use the commit description to explain the purpose and impact of the changes. Use bullet points for multiple changes if necessary. Use prefixs like 'Added:', 'Fixed:', 'Changed:' to categorize changes and order by type.";
+            return `Generate a concise commit message from the provided text - summarize the changes made in a clear and informative way. Use the commit description to explain the purpose and impact of the changes. Use bullet points for multiple changes if necessary. Use prefixs like 'Added:', 'Fixed:', 'Changed:' to categorize changes and order by type. 
+Example:
+- Added: New feature X that improves user experience
+- Fixed: Bug in feature Y that caused crashes`;
         default:
             return null;
     }
