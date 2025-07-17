@@ -27,8 +27,8 @@ export function getDiffSinceLastPush(directory, options) {
     }
 
     // If not a pull request, use the GITHUB_EVENT_BEFORE and GITHUB_SHA environment variables
-    const beforeSha = process.env.GITHUB_EVENT_BEFORE;
-    const afterSha = process.env.GITHUB_SHA;
+    const beforeSha = event_data?.before || process.env.GITHUB_EVENT_BEFORE;
+    const afterSha = event_data?.after || process.env.GITHUB_SHA;
     if (beforeSha && afterSha && beforeSha !== '0000000000000000000000000000000000000000') {
         logger.debug(`Using before SHA: ${beforeSha} and after SHA: ${afterSha}`);
         return getDiff(directory, beforeSha, afterSha);
