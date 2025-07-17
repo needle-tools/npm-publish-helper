@@ -12,6 +12,9 @@ export function getDiffSinceLastPush(directory, options) {
 
     const originName = "origin";
 
+    // First fetch changes
+    tryFetch(directory, originName, { logger });
+
     const event_data = tryLoadGithubEventData({ logger });
     console.log(event_data);
 
@@ -32,9 +35,6 @@ export function getDiffSinceLastPush(directory, options) {
         return getDiff(directory, beforeSha, afterSha);
     }
 
-
-    // First fetch changes
-    tryFetch(directory, originName, { logger });
 
     // If no specific refs are provided, get the current branch
     let branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: directory }).toString().trim();
@@ -84,24 +84,35 @@ export function getDiffSinceLastPush(directory, options) {
  * @param {string} originName - The name of the remote origin (default is 'origin').
  * @param { { logger: import("@caporal/core").Logger }} options - Additional options.
  */
-function tryFetch(directory, originName, options) {
+function tryFetch(directory, originName = 'origin', options) {
     const { logger } = options || {};
 
-    // Try to fetch more history if needed (handle both shallow and complete repos)
     try {
-
         // Check if repo is shallow first
-        const isShallow = execSync('git rev-parse --is-shallow-repository', { cwd: directory }).toString().trim();
+        const isShallow = execSync('git rev-parse --is-shallow-repository', {
+            cwd: directory,
+            encoding: 'utf8'
+        }).toString().trim();
 
         if (isShallow === 'true') {
-            logger.debug('Repository is shallow, fetching more history...');
-            execSync(`git fetch --unshallow --no-tags ${originName}`, { cwd: directory });
+            logger?.debug('Repository is shallow, fetching more history...');
+            execSync(`git fetch --unshallow --no-tags ${originName}`, {
+                cwd: directory,
+                stdio: 'pipe' // Suppress output unless there's an error
+            });
         } else {
-            logger.debug('Repository is complete, fetching latest changes...');
-            execSync(`git fetch --no-tags ${originName}`, { cwd: directory });
+            logger?.debug('Repository is complete, fetching latest changes...');
+            execSync(`git fetch --no-tags ${originName}`, {
+                cwd: directory,
+                stdio: 'pipe'
+            });
         }
+
+        logger?.debug('Fetch completed successfully');
+        return true;
     } catch (error) {
-        logger.warn(`Failed to fetch: ${error.message}`);
+        logger?.warn(`Failed to fetch: ${error.message}`);
+        return false;
     }
 }
 
@@ -114,7 +125,7 @@ function tryFetch(directory, originName, options) {
  */
 function getDiff(directory, start, end) {
     // Get diff of files changed since the last push including changes
-    const diffCommand = `git diff ${start}..${end}`;
+    const diffCommand = `git diff ${start}...${end}`;
     const diffOutput = execSync(diffCommand, { cwd: directory })?.toString().trim();
 
     if (!diffOutput) {
