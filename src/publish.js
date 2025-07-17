@@ -50,31 +50,6 @@ export async function publish(args) {
     const commitAuthorWithEmail = tryExecSync('git log -1 --pretty="%an <%ae>"', { cwd: packageDirectory }).output.trim();
     const registryName = new URL(args.registry || 'https://registry.npmjs.org/').hostname.replace('www.', '');
 
-    try {
-        if (args.llm?.apiKey) {
-            const commits = getDiffSinceLastPush(packageDirectory, { logger });
-            logger.info(`COMMITS:\n${commits}`);
-            if (commits) {
-                const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey });
-                if (res.success) {
-                    logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
-                    if (webhook)
-                        sendMessageToWebhook(webhook, `📝 **Commit Summary** for package \`${packageJson.name}\`:\n${createCodeBlocks(res.summary)}`, { logger });
-                }
-                else {
-                    logger.error(`Failed to summarize commits: ${res.error} (Status: ${res.status})`);
-                }
-            }
-        }
-        else {
-            logger.warn(`No LLM API key provided, skipping commit summarization.`);
-        }
-    }
-    catch (err) {
-        logger.error(`Failed to get changes since last push: ${err.message}`);
-    }
-
-
 
     logger.info(`Package: ${packageJson.name}@${packageJson.version}`);
     logger.info(`Build time: ${buildTime}`);
@@ -88,6 +63,7 @@ export async function publish(args) {
     if (!args.accessToken?.length) {
         logger.warn(`No access token provided. Publishing to registry ${args.registry} may fail.`);
     }
+
     // Remove slahes from the end of the tag (this may happen if the tag is provided by github ref_name
     if (args.tag?.includes("/")) {
         logger.warn(`Tag '${args.tag}' contains slashes - using last part as tag.`);
@@ -103,6 +79,32 @@ export async function publish(args) {
         if (!found) {
             throw new Error(`Tag '${args.tag}' is not valid`);
         }
+    }
+
+
+    /** @type {string | null} */
+    let llm_summary = null;
+    try {
+        if (args.llm?.apiKey) {
+            const commits = getDiffSinceLastPush(packageDirectory, { logger });
+            logger.info(`COMMITS:\n${commits}`);
+            if (commits) {
+                const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey });
+                if (res.success) {
+                    logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
+                    llm_summary = res.summary;
+                }
+                else {
+                    logger.error(`Failed to summarize commits: ${res.error} (Status: ${res.status})`);
+                }
+            }
+        }
+        else {
+            logger.warn(`No LLM API key provided, skipping commit summarization.`);
+        }
+    }
+    catch (err) {
+        logger.error(`Failed to get changes since last push: ${err.message}`);
     }
 
     processPackageJson(packageDirectory, packageJson, { logger });
@@ -123,6 +125,10 @@ export async function publish(args) {
         msg += `Tag: ${args.tag || '-'}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
+        if (llm_summary) {
+            msg = `📝 **Changes summary** for \`${packageJson.name}\`:\n\`\`\`\n${llm_summary}\n\`\`\``;
+            await sendMessageToWebhook(webhook, msg, { logger });
+        }
     }
     else {
         logger.info(`No webhook URL provided, skipping webhook notifications.`);
