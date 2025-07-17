@@ -114,13 +114,13 @@ export async function publish(args) {
     if (webhook) {
         const commitMessageOneLiner = commitMessage?.trim().replaceAll("\n", " ");
         const commitUrl = event_data?.compare || `${repoUrl}/commit/${shortSha}`;
-        let msg = `🐱‍💻 **Publish package** (\`${packageJson.name}\`) – [commit](<${commitUrl}>)\n`;
+        let msg = `🐱‍💻 **Publish package** \`${packageJson.name}\` – [commit](<${commitUrl}>)\n`;
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;
         msg += `Committer : ${commitAuthorWithEmail}\n`;
         msg += `Commit: "${commitMessageOneLiner?.length > 254 ? (commitMessageOneLiner.substring(0, 254) + "...") : commitMessageOneLiner}"\n`.replaceAll("`", "'");
-        msg += `Commit URL: ${commitUrl}\n`;
+        msg += `Commit URL: ${repoUrl}/commit/${shortSha}\n`;
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Token: ${obfuscateToken(args.accessToken)}\n`;
@@ -128,7 +128,7 @@ export async function publish(args) {
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
         if (llm_summary) {
-            msg = `📝 **Changes summary** for (\`${packageJson.name}\`):\n\`\`\`\n${llm_summary}\n\`\`\``;
+            msg = `📝 **Changes summary** for *${packageJson.name}*:\n\`\`\`\n${llm_summary}\n\`\`\``;
             await sendMessageToWebhook(webhook, msg, { logger });
         }
     }
