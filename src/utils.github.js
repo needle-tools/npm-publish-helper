@@ -1,7 +1,9 @@
 import { readFileSync } from 'fs';
 
+/** */
+
 /**
- * @type {Object | null | undefined}
+ * @type {import('../types').GithubEventData | null | undefined}
  */
 let loadedData = undefined;
 
@@ -9,7 +11,7 @@ let loadedData = undefined;
 /**
  * Load GitHub event data from the environment variable GITHUB_EVENT_PATH.
  * @param {{logger?:import("@caporal/core").Logger}} [opts] Options for loading the data.
- * @returns {Object | null} Parsed JSON object from the event file, or null if not available or an error occurs.
+ * @returns {import('../types').GithubEventData | null} Parsed JSON object from the event file, or null if not available or an error occurs.
  */
 export function tryLoadGithubEventData(opts) {
     if (loadedData === null) {
@@ -25,6 +27,7 @@ export function tryLoadGithubEventData(opts) {
         opts?.logger?.debug(`Loading GitHub event data from ${eventPath}`);
         const eventData = readFileSync(eventPath, 'utf8');
         loadedData = JSON.parse(eventData);
+        if(loadedData === undefined) loadedData = null;
         return loadedData;
     } catch (error) {
         opts?.logger?.error(`Failed to load GitHub event data from ${eventPath}:`, error);

@@ -49,3 +49,38 @@ export type RepositoryDispatchOptions = {
     inputs?: Record<string, any>;
     webhookUrl?: string | null | undefined;
 }
+
+
+type GithubAuthor = {
+    name: string;
+    email: string;
+    username?: string;
+}
+type GithubCommit = {
+        id: string;
+        message: string;
+        author: GithubAuthor;
+        committer: GithubAuthor;
+        distinct: boolean;
+        timestamp: string;
+        tree_id: string;
+        url: string;
+}
+
+// https://github.com/needle-tools/npm-publish-helper/actions/runs/16339676150/job/46158966791 (see logs)
+export type GithubEventData = {
+    after: string;
+    before: string;
+    base_ref: string | null;
+    commits: Array<GithubCommit>;
+    compare: string;
+    created: boolean;
+    deleted: boolean;
+    forced: boolean;
+    head_commit: GithubCommit;
+    organization: object;
+    pusher: { email: string; name: string; username?: string };
+    ref: string;
+    repository: object;
+    sender: object;
+}
