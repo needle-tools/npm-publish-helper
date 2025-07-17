@@ -5,10 +5,11 @@
  * @typedef { { success: true, summary:string } | { success: false, error: string, status: number } } Output
  */
 
+
 /**
  * @param {SummarizationType} type - The type of summarization to perform.
  * @param {string} text - The text to summarize.
- * @param { { api_key?: string } } options - Additional options, including the LLM API key.
+ * @param { { api_key?: string, logger:import("@caporal/core").Logger } } options - Additional options, including the LLM API key.
  * @returns {Promise<Output>} - The result of the summarization.
  */
 export async function trySummarize(type, text, options) {
@@ -23,6 +24,7 @@ export async function trySummarize(type, text, options) {
     }
 
     if (api_key.startsWith("sk-")) {
+        options.logger.info(`Using DeepSeek LLM for summarization (Length: ${text.length})`);
         return await summarizeDeepSeek(api_key, prompt, text);
     }
 

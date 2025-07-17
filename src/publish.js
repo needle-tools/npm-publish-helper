@@ -88,10 +88,11 @@ export async function publish(args) {
     let llm_summary = null;
     try {
         if (args.llm?.apiKey) {
+            logger.info(`Using LLM for summarization with API key: ${obfuscateToken(args.llm.apiKey)}`);
             const commits = getDiffSinceLastPush(packageDirectory, { logger });
             logger.info(`COMMITS:\n${commits}`);
             if (commits) {
-                const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey });
+                const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey, logger });
                 if (res.success) {
                     logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
                     llm_summary = res.summary;
