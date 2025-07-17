@@ -23,7 +23,7 @@ export function getDiffSinceLastPush(directory, options) {
     const headRef = process.env.GITHUB_HEAD_REF || 'HEAD';
     // If it's a pull request, use the base branch
     if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
-        logger.debug(`Using base ref: ${baseRef} and head ref: ${headRef}`);
+        logger.info(`Get diff for pull request: ${baseRef} → ${headRef}`);
         return getDiff(directory, `${originName}/${baseRef}`, headRef);
     }
 
@@ -31,7 +31,7 @@ export function getDiffSinceLastPush(directory, options) {
     const beforeSha = event_data?.before || process.env.GITHUB_EVENT_BEFORE;
     const afterSha = event_data?.after || process.env.GITHUB_SHA;
     if (beforeSha && afterSha && beforeSha !== '0000000000000000000000000000000000000000') {
-        logger.debug(`Using before SHA: ${beforeSha} and after SHA: ${afterSha}`);
+        logger.info(`Get diff: ${beforeSha} → ${afterSha}`);
         return getDiff(directory, beforeSha, afterSha);
     }
 
