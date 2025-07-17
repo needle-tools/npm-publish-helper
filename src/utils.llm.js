@@ -42,11 +42,13 @@ function getPrompt(type) {
             return `Generate a concise commit message from the provided text - summarize the changes made in a clear and informative way. Use the commit description to explain the purpose and impact of the changes. 
             
 Use bullet points for multiple changes if necessary but you may put multiple changes in one bullet point if they're essentially the same. 
+No whitespace at the start of the line, no newlines, no markdown formatting.
 
 Use prefixs like 'Added:', 'Fixed:', 'Changed:' to categorize changes and order by type like so: First Added, then Fixed, then Changed. 
-Example:
+Example format:
 - Added: New feature X that improves user experience
-- Fixed: Bug in feature Y that caused crashes`;
+- Fixed: Bug in feature Y that caused crashes
+`;
         default:
             return null;
     }
