@@ -23,8 +23,8 @@ program.command("send-webhook-message", "Send a message to a webhook")
 
 
 program.command('update-npmdef', 'Update npmdef files')
-    .action(async () => {
-        await updateNpmdef();
+    .action(async ({ logger }) => {
+        await updateNpmdef({ logger });
     });
 
 program.command('compile-library', 'Compile library')
@@ -40,12 +40,12 @@ program.command('prepare-publish', 'Compile and update')
     .configure({ visible: false, strictOptions: false })
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
-        await updateNpmdef();
+        await updateNpmdef({ logger });
+        await compile({ logger });
         await build({
             name: options.library?.toString(),
             logger
         });
-        await compile({ logger });
     });
 
 
