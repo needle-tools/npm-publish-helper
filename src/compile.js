@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 
 /**
- * @param {{name?:string, logger:import("@caporal/core").Logger}} args
+ * @param {{name?:string, logger:import("@caporal/core").Logger}} options
  */
-export async function build(args) {
+export async function build(options) {
 
     const dir = process.cwd();
     const packageJsonPath = dir + "/package.json";
@@ -13,52 +13,57 @@ export async function build(args) {
     }
     /** @type {import("../types").PackageJson} */
     const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
-    if (!args.name) {
-        args.name = packageJson.name.split("/").pop();
+    if (!options.name) {
+        options.name = packageJson.name.split("/").pop();
     }
-    if (!args.name) {
+    if (!options.name) {
         throw Error("Library name not found");
     }
-    args.logger.info("Building " + args.name);
+    options.logger.info("Building " + options.name);
 
     let viteConfigPath = `${dir}/vite.config.js`;
     if (!existsSync(viteConfigPath)) {
         viteConfigPath = `${dir}/node_modules/.needle`;
-        viteConfigPath = await createDefaultViteConfig(args.name, viteConfigPath, packageJson);
+        viteConfigPath = await createDefaultViteConfig(options.name, viteConfigPath, packageJson, { logger: options.logger });
     }
 
+
+    execSync('npm install --no-save vite');
     let cmd = "npx --yes vite build --base=./ --outDir=dist --config=" + viteConfigPath;
-    args.logger.info(cmd);
+    options.logger.info(cmd);
     execSync(cmd, { stdio: "inherit" });
-    args.logger.info("Built " + args.name);
+    options.logger.info("Built " + options.name);
 }
 
 /**
- * @param {{logger:import("@caporal/core").Logger}} args
+ * @param {{logger:import("@caporal/core").Logger}} options
  */
-export async function compile(args) {
+export async function compile(options) {
     let cmd = `npx --yes --package typescript tsc --rootDir . --outDir lib --noEmit false --incremental false --skipLibCheck`;
-    args.logger.info("Compile TSC");
+    options.logger.info("Compile TSC");
     execSync(cmd, { stdio: "inherit", cwd: process.cwd() });
-    args.logger.info("Compiled TSC");
+    options.logger.info("Compiled TSC");
 }
 
 /**
  * @param {string} name
  * @param {string} dir
  * @param {import("../types").PackageJson} packageJson
+ * @param {{logger:import("@caporal/core").Logger}} options
  * @returns {Promise<string>}
  */
-async function createDefaultViteConfig(name, dir, packageJson) {
+async function createDefaultViteConfig(name, dir, packageJson, options) {
     const templateConfig = import.meta.dirname + "/vite.config.template.js";
     if (!existsSync(templateConfig)) {
-        throw Error("Template not found: " + templateConfig);
+        throw Error("Vite config template not found: " + templateConfig);
     }
+    options.logger.info(`Creating default vite config at ${dir} (from template ${templateConfig})`);
     let text = readFileSync(templateConfig, "utf8");
     text = text.replaceAll("<entry>", packageJson.main || "index.ts");
     text = text.replaceAll("<name>", name);
 
-    const outputPath = dir + "/vite.config.js";
+    mkdirSync(dir, { recursive: true });
+    const outputPath = `${dir}/vite.config.js`;
     writeFileSync(outputPath, text, "utf8");
     return outputPath;
 }
