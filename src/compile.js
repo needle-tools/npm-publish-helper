@@ -39,7 +39,7 @@ export async function build(options) {
  * @param {{logger:import("@caporal/core").Logger}} options
  */
 export async function compile(options) {
-    let cmd = `npx --yes --package typescript tsc --rootDir . --outDir lib --noEmit false --incremental false --skipLibCheck`;
+    let cmd = `npx --yes --package typescript tsc --outDir lib --noEmit false --incremental false --skipLibCheck`;
     options.logger.info("Compile TSC");
     execSync(cmd, { stdio: "inherit", cwd: process.cwd() });
     options.logger.info("Compiled TSC");
