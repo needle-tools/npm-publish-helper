@@ -22,6 +22,11 @@ export type Npmdef = {
 export type PublishOptions = {
     logger: Logger;
     packageDirectory: string;
+
+    updateNpmdef: boolean;
+    compileTsc: boolean;
+    compileDist: boolean;
+
     registry: string;
     accessToken: string | null | undefined;
     tag: string | null | undefined;

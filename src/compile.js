@@ -2,11 +2,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
 
 /**
- * @param {{name?:string, logger:import("@caporal/core").Logger}} options
+ * @param {{name?:string, packageDirectory?:string, logger:import("@caporal/core").Logger}} options
  */
 export async function build(options) {
 
-    const dir = process.cwd();
+    const dir = options.packageDirectory || process.cwd();
     const packageJsonPath = dir + "/package.json";
     if (!existsSync(packageJsonPath)) {
         throw Error("package.json not found at " + packageJsonPath);
@@ -28,21 +28,21 @@ export async function build(options) {
     }
 
 
-    execSync('npm install --no-save vite');
+    execSync('npm install --no-save vite', { cwd: dir });
     let cmd = "npx --yes vite build --base=./ --outDir=dist --config=" + viteConfigPath;
     options.logger.info(cmd);
-    execSync(cmd, { stdio: "inherit" });
+    execSync(cmd, { stdio: "inherit", cwd: dir });
     options.logger.info("Built " + options.name);
 }
 
 /**
- * @param {{logger:import("@caporal/core").Logger}} options
+ * @param {{directory?:string, logger:import("@caporal/core").Logger}} options
  */
 export async function compile(options) {
     execSync('npm install --no-save typescript');
     let cmd = `npx --yes --package typescript tsc --outDir lib --noEmit false --incremental false --skipLibCheck`;
     options.logger.info("Compile TSC");
-    execSync(cmd, { stdio: "inherit", cwd: process.cwd() });
+    execSync(cmd, { stdio: "inherit", cwd: options.directory || process.cwd() });
     options.logger.info("Compiled TSC");
 }
 

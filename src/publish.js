@@ -1,11 +1,13 @@
 import { execSync } from 'child_process';
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
-import { createCodeBlocks, obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
+import { obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
 import { trySummarize } from './utils.llm.js';
 import { tryLoadGithubEventData } from './utils.github.js';
+import { updateNpmdef } from './npmdef.js';
+import { build, compile } from './compile.js';
 
 
 /**
@@ -180,6 +182,16 @@ export async function publish(args) {
         // ensure the version is set correctly (it might have been modified in the meantime)
         packageJson.version = nextVersion;
         logger.info(`Updated package version to ${packageJson.version}`);
+    }
+
+    if (args.updateNpmdef) {
+        await updateNpmdef({ logger });
+    }
+    if (args.compileTsc) {
+        await compile({ logger })
+    }
+    if (args.compileDist) {
+        await build({ logger });
     }
 
 

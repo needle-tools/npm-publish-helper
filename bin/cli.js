@@ -66,6 +66,7 @@ program.command('publish', 'Publish npm package')
     .option("--override-version <version>", "Override package version", { required: false, validator: program.STRING })
     // .option("--exec-before", "Allow running a command before publishing (e.g. 'npm run ...')", { required: false, validator: program.STRING })
     .option("--llm-api-key <api-key>", "LLM API key for summarization", { required: false, validator: program.STRING })
+    .option("--prepare-package", "Prepare the package for publishing (compile, update npmdef, build dist)", { required: false, validator: program.BOOLEAN, default: false })
     .action(async ({ logger, args, options }) => {
         const { publish } = await import('../src/publish.js');
         const directory = (args.directory || process.cwd()).toString();
@@ -74,9 +75,15 @@ program.command('publish', 'Publish npm package')
         if (options.createTag === "true") {
             options.createTag = '';
         }
+        const preparePackage = options.preparePackage === true;
         await publish({
             logger: logger,
             packageDirectory: directory,
+
+            updateNpmdef: preparePackage,
+            compileTsc: preparePackage,
+            compileDist: preparePackage,
+
             registry: registry,
             accessToken: options.accessToken?.toString() || null,
             useHashInVersion: options.versionHash === true, // default to false
