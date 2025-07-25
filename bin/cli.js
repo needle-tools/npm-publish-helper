@@ -40,6 +40,7 @@ program.command('prepare-publish', 'Compile and update')
     .configure({ visible: false, strictOptions: false })
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
+        logger.info('Preparing package to publish...');
         await updateNpmdef({ logger });
         await compile({ logger });
         await build({
