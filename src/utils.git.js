@@ -92,11 +92,14 @@ export function getDiffSince(directory, options) {
         throw new Error('Both start_time and end_time must be provided');
     }
 
+    const branchName = "HEAD"; // Use HEAD to get the current branch
+
     // Fetch the latest changes
     tryFetch(directory, 'origin', { logger });
 
     // Get the diff for the specified time range
-    const diffCommand = `git diff --since="${start_time}" --until="${end_time}"`;
+    const diffCommand = `git diff --name-only --since="${start_time}" --until="${end_time}" ${branchName}`;
+    options.logger?.debug(`Running diff command: ${diffCommand}`);
     const diffOutput = execSync(diffCommand, { cwd: directory })?.toString().trim();
 
     if (!diffOutput) {
