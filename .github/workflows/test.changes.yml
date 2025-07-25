@@ -1,0 +1,33 @@
+name: Log changes in git repository
+on:
+    push:
+        branches:
+            - main
+    # also run on a schedule every day at midnight UTC
+    schedule:
+        - cron: '0 0 * * *'  # Every day at midnight UTC
+
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        timeout-minutes: 2
+        defaults:
+          run:
+            working-directory: ./
+
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Setup Node.js
+            uses: actions/setup-node@v4
+            with:
+              node-version: '20'
+              registry-url: 'https://registry.npmjs.org'
+
+          - name: Install dependencies
+            run: npm install
+
+          - name: Run publish command
+            id: publish
+            run: npx . diff --debug
