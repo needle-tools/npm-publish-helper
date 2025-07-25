@@ -82,10 +82,10 @@ export function getDiffSinceLastPush(directory, options) {
  * Fetch more history if the repository is shallow or fetch latest changes.
  * @param {string} directory - The path to the git repository.
  * @param {string} originName - The name of the remote origin (default is 'origin').
- * @param { { logger: import("@caporal/core").Logger }} options - Additional options.
+ * @param { { logger: import("@caporal/core").Logger, maxDepth?:number }} options - Additional options.
  */
 function tryFetch(directory, originName = 'origin', options) {
-    const { logger } = options || {};
+    const { logger, maxDepth = 100 } = options || {};
 
     try {
         // Check if repo is shallow first
@@ -94,18 +94,44 @@ function tryFetch(directory, originName = 'origin', options) {
             encoding: 'utf8'
         }).toString().trim();
 
+        const currentBranchName = execSync('git rev-parse --abbrev-ref HEAD', {
+            cwd: directory,
+            encoding: 'utf8'
+        }).toString().trim();
+
         if (isShallow === 'true') {
             logger?.debug('Repository is shallow, fetching more history...');
-            execSync(`git fetch --unshallow --no-tags ${originName}`, {
-                cwd: directory,
-                stdio: 'pipe' // Suppress output unless there's an error
-            });
-        } else {
-            logger?.debug('Repository is complete, fetching latest changes...');
-            execSync(`git fetch --no-tags ${originName}`, {
+            // Deepen by specific amount instead of full unshallow
+            execSync(`git fetch --depth=${maxDepth} --no-tags ${originName}`, {
                 cwd: directory,
                 stdio: 'pipe'
             });
+        }
+        else {
+            logger?.info('Repository is complete, fetching latest changes...');
+
+            // Check if we're in detached HEAD or if branch exists on remote
+            if (currentBranchName === 'HEAD') {
+                // Just fetch all refs
+                execSync(`git fetch --no-tags ${originName}`, {
+                    cwd: directory,
+                    stdio: 'pipe'
+                });
+            } else {
+                // Try to fetch the specific branch, fall back to fetching all
+                try {
+                    execSync(`git fetch --shallow-since="30 days ago" --no-tags ${originName} ${currentBranchName}`, {
+                        cwd: directory,
+                        stdio: 'pipe'
+                    });
+                } catch (branchError) {
+                    logger?.debug(`Branch-specific fetch failed, fetching all: ${branchError.message}`);
+                    execSync(`git fetch --shallow-since="30 days ago" --no-tags ${originName}`, {
+                        cwd: directory,
+                        stdio: 'pipe'
+                    });
+                }
+            }
         }
 
         logger?.debug('Fetch completed successfully');
