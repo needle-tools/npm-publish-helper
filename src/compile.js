@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
-import { tryExecSync } from "./utils";
+import { tryExecSync } from "./utils.js";
 
 /**
  * @param {{name?:string, packageDirectory?:string, logger:import("@caporal/core").Logger}} options
