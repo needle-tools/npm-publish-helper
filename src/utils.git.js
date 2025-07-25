@@ -141,7 +141,7 @@ export function getDiffSince(directory, options) {
  * Fetch more history if the repository is shallow or fetch latest changes.
  * @param {string} directory - The path to the git repository.
  * @param {string} originName - The name of the remote origin (default is 'origin').
- * @param { { logger: import("@caporal/core").Logger, maxDepth?:number }} options - Additional options.
+ * @param { { logger: import("@caporal/core").Logger | null, maxDepth?:number }} options - Additional options.
  */
 function tryFetch(directory, originName = 'origin', options) {
     const { logger, maxDepth = 100 } = options || {};

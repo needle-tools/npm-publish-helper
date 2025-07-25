@@ -130,12 +130,18 @@ program.command("repository-dispatch", "Invoke a repository dispatch event to tr
 
 
 program.command('diff', 'Get git changes')
+    .option('--debug', 'Enable debug logging', { required: false, validator: program.BOOLEAN, default: false })
     .option('--directory <directory>', 'Directory to check for changes', { required: false, validator: program.STRING, default: process.cwd() })
+    .option('--start-time <start_time>', 'Start time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() })
+    .option('--end-time <end_time>', 'End time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date().toISOString() })
     .action(async ({ logger, options }) => {
+        logger.silent = !options.debug; // Set logger silent mode based on debug option
+
         const { getDiffSince } = await import('../src/utils.git.js');
+
         const directory = options.directory.toString();
-        const startTime = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const endTime = new Date().toISOString();
+        const startTime = options.startTime.toString();
+        const endTime = options.endTime.toString();
         const diff = await getDiffSince(directory, {
             logger,
             start_time: startTime,
