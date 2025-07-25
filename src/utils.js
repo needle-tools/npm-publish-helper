@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { appendFileSync } from 'fs';
+import { appendFileSync, existsSync, readFileSync } from 'fs';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
 
 /**
@@ -8,17 +8,46 @@ import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.
  * @param {string} cmd - The command to execute.
  * @param {import('child_process').ExecSyncOptionsWithBufferEncoding | import("child_process").ExecOptionsWithStringEncoding} [execOptions] - Optional options for execSync.
  * @param {{logError?:boolean}} [options] - Additional options
- * @return {{success: false, error:string|Error, output:string } | {success: true, output:string}} - The output of the command as a string, or an Error object if the command fails.
+ * @return {{success: false, output:string, error:string|Error, full_error_logs:string|null } | {success: true, output:string}} - The output of the command as a string, or an Error object if the command fails.
  */
 export function tryExecSync(cmd, execOptions, options = {}) {
     try {
         const res = execSync(cmd, execOptions).toString().trim();
         return { success: true, output: res };
     } catch (error) {
-        const oneLineError = error.message.split('\n')[0];
-        if (options?.logError !== false) console.error(`Command failed: ${cmd}\n— Error: "${oneLineError}"`);
-        return { success: false, output: error.message, error: error, };
+        const oneLineError = error.message.split(/\n/)[0];
+        const fullErrorLog = tryGatherFullErrorLog(error.message);
+        if (options?.logError !== false) {
+            console.error(`Command failed: '${cmd}' – Error: "${oneLineError}"\nFull error: ${fullErrorLog || error.message}`);
+        }
+        return { success: false, output: error.message, error: error, full_error_logs: fullErrorLog || null };
     }
+}
+
+/**
+ * Parses a complete error string into a more structured format.
+ * @param {string} errorString - The error string to parse.
+ * @param {{logger?:import('@caporal/core').Logger}} [options] - Additional options, such as a logger.
+ * @return {string | null} - The parsed error message or null if no complete error is found.
+ */
+export function tryGatherFullErrorLog(errorString, options = {}) {
+    const npmCompleteErrorRegex = /npm error A complete log of this run can be found in: (.+?\.log)/;
+    const match = errorString.match(npmCompleteErrorRegex);
+    if (match && match[1]) {
+        const logfilePath = match[1];
+        try {
+            if (existsSync(logfilePath)) {
+                // Check if the log file exists
+                options?.logger?.debug(`Reading complete error log from ${logfilePath}`);
+                const content = readFileSync(logfilePath, 'utf8');
+                return content.trim();
+            }
+        } catch (e) {
+            options?.logger?.error(`Failed to read log file at ${logfilePath}: ${e.message}`);
+        }
+
+    }
+    return null;
 }
 
 /**
