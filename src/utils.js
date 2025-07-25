@@ -7,7 +7,7 @@ import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.
  * If the command fails, it returns the error instead of throwing it.
  * @param {string} cmd - The command to execute.
  * @param {import('child_process').ExecSyncOptionsWithBufferEncoding | import("child_process").ExecOptionsWithStringEncoding} [execOptions] - Optional options for execSync.
- * @param {{logError?:boolean}} [options] - Additional options
+ * @param {{logError?:boolean, logger?:import("@caporal/core").Logger}} [options] - Additional options
  * @return {{success: false, output:string, error:string|Error, full_error_logs:string|null } | {success: true, output:string}} - The output of the command as a string, or an Error object if the command fails.
  */
 export function tryExecSync(cmd, execOptions, options = {}) {
@@ -18,7 +18,9 @@ export function tryExecSync(cmd, execOptions, options = {}) {
         const oneLineError = error.message.split(/\n/)[0];
         const fullErrorLog = tryGatherFullErrorLog(error.message);
         if (options?.logError !== false) {
-            console.error(`‼ Command failed: '${cmd}' – Error: "${oneLineError}"\n--- Full Error Start\n${fullErrorLog || error.message}\n--- Full Error End`);
+            const msg = `‼ Command failed: '${cmd}' – Error: "${oneLineError}"\n--- Full Error Start\n${fullErrorLog || error.message}\n--- Full Error End`;
+            if (options.logger) options.logger.error(msg);
+            else console.error();
         }
         return { success: false, output: error.message, error: error, full_error_logs: fullErrorLog || null };
     }

@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { execSync } from "child_process";
+import { tryExecSync } from "./utils";
 
 /**
  * @param {{name?:string, packageDirectory?:string, logger:import("@caporal/core").Logger}} options
@@ -31,7 +32,11 @@ export async function build(options) {
     execSync('npm install --no-save vite', { cwd: dir });
     let cmd = "npx --yes vite build --base=./ --outDir=dist --config=" + viteConfigPath;
     options.logger.info(cmd);
-    execSync(cmd, { stdio: "inherit", cwd: dir });
+    const res = tryExecSync(cmd, { stdio: "inherit", cwd: dir }, { logger: options.logger, logError: true });
+    if (res.success === false) {
+        options.logger.error("Failed to build Vite project. Please check the errors above.");
+        throw new Error("Vite build failed");
+    }
     options.logger.info("Built " + options.name);
 }
 
@@ -42,7 +47,10 @@ export async function compile(options) {
     execSync('npm install --no-save typescript');
     let cmd = `npx --yes --package typescript tsc --outDir lib --noEmit false --incremental false --skipLibCheck`;
     options.logger.info("Compile TSC");
-    execSync(cmd, { stdio: "inherit", cwd: options.directory || process.cwd() });
+    const res = tryExecSync(cmd, { stdio: "inherit", cwd: options.directory || process.cwd() }, { logger: options.logger, logError: true });
+    if (res.success === false) {
+        throw new Error("TypeScript compilation failed");
+    }
     options.logger.info("Compiled TSC");
 }
 
