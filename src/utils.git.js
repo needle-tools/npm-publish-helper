@@ -1,5 +1,6 @@
 import { execSync } from 'child_process';
 import { tryLoadGithubEventData } from './utils.github.js';
+import { tryExecSync } from './utils.js';
 
 /**
  * Get the list of files changed on the current branch since the last push.
@@ -97,16 +98,42 @@ export function getDiffSince(directory, options) {
     // Fetch the latest changes
     tryFetch(directory, 'origin', { logger });
 
-    // Get the diff for the specified time range
-    const diffCommand = `git diff --name-only --since="${start_time}" --until="${end_time}" ${branchName}`;
-    options.logger?.debug(`Running diff command: ${diffCommand}`);
-    const diffOutput = execSync(diffCommand, { cwd: directory })?.toString().trim();
 
-    if (!diffOutput) {
-        return null;
+    try {
+        // Get the first commit after start date
+        const startCommitRes = tryExecSync(`git rev-list -n 1 --before="${start_time}" ${branchName}`, {
+            encoding: 'utf8'
+        }, { logError: true, logger });
+
+        // Get the last commit before end date  
+        const endCommitRes = tryExecSync(`git rev-list -n 1 --before="${end_time}" ${branchName}`, {
+            encoding: 'utf8'
+        }, { logError: true, logger });
+
+        if (!startCommitRes.success || !endCommitRes.success) {
+            return null;
+        }
+
+        const startCommit = startCommitRes.output.trim();
+        const endCommit = endCommitRes.output.trim();
+
+        // Now diff between these commits
+        const diffRes = tryExecSync(`git diff ${startCommit}^..${endCommit}`, {
+            encoding: 'utf8'
+        }, { logError: true, logger });
+
+        if (!diffRes.success) {
+            logger.error(`Failed to get diff: ${diffRes.error}`);
+            return null;
+        }
+        const diffOutput = diffRes.output.trim();
+        return diffOutput;
+
+    } catch (error) {
+        logger.error(error);
     }
 
-    return diffOutput;
+    return null;
 }
 
 

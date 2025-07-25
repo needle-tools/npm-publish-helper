@@ -134,7 +134,6 @@ program.command('diff', 'Get git changes')
     .action(async ({ logger, options }) => {
         const { getDiffSince } = await import('../src/utils.git.js');
         const directory = options.directory.toString();
-        // last week
         const startTime = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const endTime = new Date().toISOString();
         const diff = await getDiffSince(directory, {
