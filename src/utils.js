@@ -18,7 +18,7 @@ export function tryExecSync(cmd, execOptions, options = {}) {
         const oneLineError = error.message.split(/\n/)[0];
         const fullErrorLog = tryGatherFullErrorLog(error.message);
         if (options?.logError !== false) {
-            console.error(`Command failed: '${cmd}' – Error: "${oneLineError}"\nFull error: ${fullErrorLog || error.message}`);
+            console.error(`‼ Command failed: '${cmd}' – Error: "${oneLineError}"\n--- Full Error Start\n${fullErrorLog || error.message}\n--- Full Error End`);
         }
         return { success: false, output: error.message, error: error, full_error_logs: fullErrorLog || null };
     }
