@@ -79,6 +79,35 @@ export function getDiffSinceLastPush(directory, options) {
 
 
 /**
+ * Get the diff within a time range
+ * @param {string} directory - The path to the git repository.
+ * @param {{logger:import("@caporal/core").Logger, start_time:string, end_time:string}} options - Options for the diff.
+ * 
+ */
+export function getDiffSince(directory, options) {
+
+    const { logger, start_time, end_time } = options || {};
+
+    if (!start_time || !end_time) {
+        throw new Error('Both start_time and end_time must be provided');
+    }
+
+    // Fetch the latest changes
+    tryFetch(directory, 'origin', { logger });
+
+    // Get the diff for the specified time range
+    const diffCommand = `git diff --since="${start_time}" --until="${end_time}"`;
+    const diffOutput = execSync(diffCommand, { cwd: directory })?.toString().trim();
+
+    if (!diffOutput) {
+        return null;
+    }
+
+    return diffOutput;
+}
+
+
+/**
  * Fetch more history if the repository is shallow or fetch latest changes.
  * @param {string} directory - The path to the git repository.
  * @param {string} originName - The name of the remote origin (default is 'origin').

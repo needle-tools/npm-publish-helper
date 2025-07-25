@@ -129,4 +129,20 @@ program.command("repository-dispatch", "Invoke a repository dispatch event to tr
     });
 
 
+program.command('diff', 'Get git changes')
+    .option('--directory <directory>', 'Directory to check for changes', { required: false, validator: program.STRING, default: process.cwd() })
+    .action(async ({ logger, options }) => {
+        const { getDiffSince } = await import('../src/utils.git.js');
+        const directory = options.directory.toString();
+        // last week
+        const startTime = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const endTime = new Date().toISOString();
+        const diff = await getDiffSince(directory, {
+            logger,
+            start_time: startTime,
+            end_time: endTime
+        });
+        console.log(diff);
+    });
+
 program.run();
