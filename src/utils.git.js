@@ -100,9 +100,9 @@ function tryFetch(directory, originName = 'origin', options) {
         }).toString().trim();
 
         if (isShallow === 'true') {
-            logger?.debug('Repository is shallow, fetching more history...');
+            logger?.info('Repository is shallow, fetching more history...');
             // Deepen by specific amount instead of full unshallow
-            execSync(`git fetch --depth=${maxDepth} --no-tags ${originName}`, {
+            execSync(`git fetch --depth=${maxDepth} --no-tags ${originName} ${currentBranchName}`, {
                 cwd: directory,
                 stdio: 'pipe'
             });
