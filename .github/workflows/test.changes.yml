@@ -9,7 +9,7 @@ on:
 
 
 jobs:
-    publish:
+    diff:
         runs-on: ubuntu-latest
         timeout-minutes: 2
         defaults:
@@ -28,6 +28,5 @@ jobs:
           - name: Install dependencies
             run: npm install
 
-          - name: Run publish command
-            id: publish
-            run: npx . diff --debug
+          - name: Run diff
+            run: npx . diff
