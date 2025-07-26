@@ -1,7 +1,7 @@
 
 
 /**
- * @typedef {"changelog" | "commit"} SummarizationType
+ * @typedef {"changelog" | "commit" | "podcast"} SummarizationType
  * @typedef { { success: true, summary:string } | { success: false, error: string, status: number } } Output
  */
 
@@ -57,8 +57,12 @@ Example format:
 - New feature X that improves user experience
 - Bug in feature Y that caused crashes when xyz happened
 `;
+        case "podcast":
+            return `Generate a concise summary of the provided text as if it were a podcast episode transcript.
+Focus on the key points and insights discussed, making it engaging and easy to understand for listeners.`;
+
         default:
-            return null;
+            throw new Error(`Unknown summarization type: ${type}`);
     }
 }
 

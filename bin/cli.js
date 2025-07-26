@@ -155,8 +155,13 @@ program.command('diff', 'Get git changes')
             logger.error('No changes found or an error occurred while fetching the diff.');
             return;
         }
+
+
         if (llm_api_key) {
-            const summary = await trySummarize("changelog", diff, {
+            if (options.debug) {
+                console.log(diff);
+            }
+            const summary = await trySummarize("podcast", diff, {
                 api_key: llm_api_key,
                 logger: logger
             });
@@ -166,7 +171,9 @@ program.command('diff', 'Get git changes')
                 logger.error(`Failed to summarize changes: ${summary.error}`);
             }
         }
-        console.log(diff);
+        else {
+            console.log(diff);
+        }
     });
 
 program.run();
