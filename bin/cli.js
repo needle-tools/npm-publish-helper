@@ -4,6 +4,7 @@ import caporal from '@caporal/core';
 import { updateNpmdef } from "../src/npmdef.js";
 import { build, compile } from '../src/compile.js';
 import { sendMessageToWebhook } from '../src/webhooks.js';
+import { trySummarize } from '../src/utils.llm.js';
 
 
 export const program = caporal.program;
@@ -135,6 +136,7 @@ program.command('diff', 'Get git changes')
     .option('--directory <directory>', 'Directory to check for changes', { required: false, validator: program.STRING, default: process.cwd() })
     .option('--start-time <start_time>', 'Start time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() })
     .option('--end-time <end_time>', 'End time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date().toISOString() })
+    .option('--llm-api-key <llm_api_key>', 'LLM API key for summarization', { required: false, validator: program.STRING })
     .action(async ({ logger, options }) => {
         logger.silent = !options.debug; // Set logger silent mode based on debug option
 
@@ -143,11 +145,27 @@ program.command('diff', 'Get git changes')
         const directory = options.directory.toString();
         const startTime = options.startTime.toString();
         const endTime = options.endTime.toString();
+        const llm_api_key = options.llmApiKey?.toString() || null;
         const diff = await getDiffSince(directory, {
             logger,
             start_time: startTime,
             end_time: endTime
         });
+        if (diff === null) {
+            logger.error('No changes found or an error occurred while fetching the diff.');
+            return;
+        }
+        if (llm_api_key) {
+            const summary = await trySummarize("changelog", diff, {
+                api_key: llm_api_key,
+                logger: logger
+            });
+            if (summary.success) {
+                logger.info(`Summarized changes:\n${summary.summary}`);
+            } else {
+                logger.error(`Failed to summarize changes: ${summary.error}`);
+            }
+        }
         console.log(diff);
     });
 
