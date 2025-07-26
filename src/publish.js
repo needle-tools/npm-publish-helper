@@ -4,7 +4,7 @@ import { resolve } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
 import { obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
-import { trySummarize } from './utils.llm.js';
+import { runLLM } from './utils.llm.js';
 import { tryLoadGithubEventData } from './utils.github.js';
 import { updateNpmdef } from './npmdef.js';
 import { build, compile } from './compile.js';
@@ -94,7 +94,7 @@ export async function publish(args) {
             const commits = getDiffSinceLastPush(packageDirectory, { logger });
             logger.info(`COMMITS:\n${commits}`);
             if (commits) {
-                const res = await trySummarize("commit", commits, { api_key: args.llm.apiKey, logger });
+                const res = await runLLM("commit", commits, { api_key: args.llm.apiKey, logger });
                 if (res.success) {
                     logger.info(`Commit summary:\n---\n${res.summary}\n---\n`);
                     llm_summary = res.summary;

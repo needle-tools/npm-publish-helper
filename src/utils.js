@@ -1,6 +1,16 @@
 import { execSync } from 'child_process';
+import { createHash } from "crypto";
 import { appendFileSync, existsSync, readFileSync } from 'fs';
 import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
+
+
+/**
+ * Generates an MD5 hash of the given text.
+ * @param {string} text - The text to hash.
+ */
+export function getMd5Hash(text) {
+    return createHash('md5').update(text).digest('hex');
+}
 
 /**
  * Executes a command synchronously and returns the output.

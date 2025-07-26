@@ -4,7 +4,7 @@ import caporal from '@caporal/core';
 import { updateNpmdef } from "../src/npmdef.js";
 import { build, compile } from '../src/compile.js';
 import { sendMessageToWebhook } from '../src/webhooks.js';
-import { trySummarize } from '../src/utils.llm.js';
+import { runLLM } from '../src/utils.llm.js';
 
 
 export const program = caporal.program;
@@ -132,48 +132,51 @@ program.command("repository-dispatch", "Invoke a repository dispatch event to tr
 
 program.command('diff', 'Get git changes')
     .configure({ visible: false, strictOptions: false })
+    .argument('<directory>', 'Directory to publish', { validator: program.STRING })
     .option('--debug', 'Enable debug logging', { required: false, validator: program.BOOLEAN, default: false })
-    .option('--directory <directory>', 'Directory to check for changes', { required: false, validator: program.STRING, default: process.cwd() })
     .option('--start-time <start_time>', 'Start time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() })
     .option('--end-time <end_time>', 'End time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date().toISOString() })
     .option('--llm-api-key <llm_api_key>', 'LLM API key for summarization', { required: false, validator: program.STRING })
-    .action(async ({ logger, options }) => {
+    .action(async ({ logger, args, options }) => {
         logger.silent = !options.debug; // Set logger silent mode based on debug option
-
+        if(options.debug) logger.level = "debug";
         const { getDiffSince } = await import('../src/utils.git.js');
-
-        const directory = options.directory.toString();
+        const directory = args.directory.toString();
         const startTime = options.startTime.toString();
         const endTime = options.endTime.toString();
         const llm_api_key = options.llmApiKey?.toString() || null;
         const diff = await getDiffSince(directory, {
             logger,
-            start_time: startTime,
-            end_time: endTime
+            startTime: startTime,
+            endTime: endTime,
+            includeCommitInformation: true,
         });
         if (diff === null) {
             logger.error('No changes found or an error occurred while fetching the diff.');
             return;
         }
-
-
         if (llm_api_key) {
             if (options.debug) {
                 console.log(diff);
             }
-            const summary = await trySummarize("podcast", diff, {
+            const summary = await runLLM({
+                prompt: "Summarize the changes made to the repository in prose. Group similar changes together. Don't make lists. Don't include any description of your own. Include code snippets and examples. Include author names.",
+            }, diff, {
                 api_key: llm_api_key,
                 logger: logger
             });
             if (summary.success) {
-                logger.info(`Summarized changes:\n${summary.summary}`);
+                console.log(summary.summary);
             } else {
-                logger.error(`Failed to summarize changes: ${summary.error}`);
+                logger.error(`Failed to summarize the diff: ${summary.error}`);
+                process.exit(1);
             }
         }
         else {
             console.log(diff);
         }
+        process.exit(0);
     });
+
 
 program.run();

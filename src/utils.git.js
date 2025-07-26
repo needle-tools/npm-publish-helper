@@ -82,32 +82,56 @@ export function getDiffSinceLastPush(directory, options) {
 /**
  * Get the diff within a time range
  * @param {string} directory - The path to the git repository.
- * @param {{logger:import("@caporal/core").Logger, start_time:string, end_time:string}} options - Options for the diff.
+ * @param {{logger:import("@caporal/core").Logger, startTime:string, endTime:string, includeCommitInformation?:boolean}} options - Options for the diff.
  * 
  */
 export function getDiffSince(directory, options) {
 
-    const { logger, start_time, end_time } = options || {};
+    const { logger,
+        startTime: startTime,
+        endTime: endTime } = options || {};
 
-    if (!start_time || !end_time) {
-        throw new Error('Both start_time and end_time must be provided');
+    if (!startTime || !endTime) {
+        throw new Error('Both startTime and endTime must be provided');
+    }
+    else {
+        logger.debug(`Getting diff from ${startTime} to ${endTime}`);
     }
 
     const branchName = "HEAD"; // Use HEAD to get the current branch
+    const maxBufferSize = 1024 * 1024 * 10; // Increase buffer size to handle large diffs
 
     // Fetch the latest changes
     tryFetch(directory, 'origin', { logger });
 
 
     try {
+
+        if (options.includeCommitInformation) {
+            const cmd = `git log --since="${startTime}" --until="${endTime}" --pretty=format:"%h %an %ai %s" --date=short -p`;
+            const logRes = tryExecSync(cmd, {
+                encoding: 'utf8',
+                cwd: directory,
+                maxBuffer: maxBufferSize
+            }, { logError: true, logger });
+            if (!logRes.success) {
+                logger.error(`Failed to get commit information: ${logRes.error}`);
+                return null;
+            }
+            return logRes.output.trim();
+        }
+
+
         // Get the first commit after start date
-        const startCommitRes = tryExecSync(`git rev-list -n 1 --before="${start_time}" ${branchName}`, {
-            encoding: 'utf8'
+        const startCommitRes = tryExecSync(`git rev-list -n 1 --before="${startTime}" ${branchName}`, {
+            encoding: 'utf8',
+            cwd: directory
         }, { logError: true, logger });
 
         // Get the last commit before end date  
-        const endCommitRes = tryExecSync(`git rev-list -n 1 --before="${end_time}" ${branchName}`, {
-            encoding: 'utf8'
+        const endCommitRes = tryExecSync(`git rev-list -n 1 --before="${endTime}" ${branchName}`, {
+            encoding: 'utf8',
+            cwd: directory
         }, { logError: true, logger });
 
         if (!startCommitRes.success || !endCommitRes.success) {
@@ -119,7 +143,9 @@ export function getDiffSince(directory, options) {
 
         // Now diff between these commits
         const diffRes = tryExecSync(`git diff ${startCommit}^..${endCommit}`, {
-            encoding: 'utf8'
+            encoding: 'utf8',
+            cwd: directory,
+            maxBuffer: maxBufferSize
         }, { logError: true, logger });
 
         if (!diffRes.success) {

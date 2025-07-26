@@ -7,28 +7,35 @@
 
 
 /**
- * @param {SummarizationType} type - The type of summarization to perform.
+ * @param {SummarizationType | {prompt:string}} typeOrPrompt - The type of summarization to perform.
  * @param {string} text - The text to summarize.
  * @param { { api_key?: string, logger:import("@caporal/core").Logger } } options - Additional options, including the LLM API key.
  * @returns {Promise<Output>} - The result of the summarization.
  */
-export async function trySummarize(type, text, options) {
+export async function runLLM(typeOrPrompt, text, options) {
     const api_key = options?.api_key || process.env.LLM_API_KEY;
     if (!api_key) {
         return { success: false, error: "No LLM API key provided", status: 400 };
     }
 
-    const prompt = getPrompt(type);
+    const prompt = typeof typeOrPrompt === "object" ? typeOrPrompt.prompt : getPrompt(typeOrPrompt);
     if (!prompt) {
-        return { success: false, error: `No prompt defined for summarization type: ${type}`, status: 400 };
+        return { success: false, error: `No prompt defined for summarization type: ${typeOrPrompt}`, status: 400 };
     }
 
-    if (api_key.startsWith("sk-")) {
-        options.logger.info(`Using DeepSeek LLM for summarization (Length: ${text.length})`);
-        return await summarizeDeepSeek(api_key, prompt, text);
+    if (api_key.startsWith("sk-ant-")) {
+        options.logger.info(`Using Claude LLM for summarization (Length: ${text.length.toLocaleString()})`);
+        return await runClaude(api_key, prompt, text);
+    }
+    else if (api_key.startsWith("sk-or")) {
+        // TODO OpenAI
+    }
+    else if (api_key.startsWith("sk-")) {
+        options.logger.info(`Using DeepSeek LLM for summarization (Length: ${text.length.toLocaleString()})`);
+        return await runDeepSeek(api_key, prompt, text);
     }
 
-    return { success: false, error: "LLM API not supported yet", status: 501 };
+    return { success: false, error: "Unknown LLM API key format", status: 501 };
 }
 
 
@@ -74,8 +81,27 @@ Focus on the key points and insights discussed, making it engaging and easy to u
  * @param {string} text - The text to summarize.
  * @returns {Promise<Output>} - The result of the summarization.
  */
-async function summarizeDeepSeek(api_key, prompt, text) {
+async function runDeepSeek(api_key, prompt, text) {
     try {
+
+        const maxLength = 100_000;
+        if (text.length > maxLength) {
+            let summary = "";
+            for (let i = 0; i < text.length; i += maxLength) {
+                const slice = text.slice(i, i + maxLength);
+                const res = await runDeepSeek(api_key, prompt, slice);
+                if (!res.success) {
+                    return res; // Return error if summarization fails
+                }
+                summary += res.summary + "\n\n";
+                if (i > 10) {
+                    summary += "[truncated]"; // Indicate that there are more changes
+                    break; // Avoid too many API calls
+                }
+            }
+            return { success: true, summary: summary };
+        }
+
         const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -84,6 +110,46 @@ async function summarizeDeepSeek(api_key, prompt, text) {
             },
             body: JSON.stringify({
                 model: "deepseek-chat",
+                messages: [
+                    { role: "system", content: prompt },
+                    { role: "user", content: text }
+                ],
+                max_tokens: 500,
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            return { success: false, error: `API Error: ${errorText}`, status: response.status };
+        }
+
+        const data = await response.json();
+        return { success: true, summary: data.choices[0].message.content.trim() };
+    } catch (error) {
+        return { success: false, error: `Fetch Error: ${error.message}`, status: 500 };
+    }
+}
+
+
+/**
+ * Summarize text using Claude LLM.
+ * @param {string} api_key - The API key for Claude.
+ * @param {string} prompt - The prompt to use for summarization.
+ * @param {string} text - The text to summarize.
+ * @param {string} [model="claude-opus-4-20250514"] - The model to use for summarization.
+ * @returns {Promise<Output>} - The result of the summarization.
+ */
+async function runClaude(api_key, prompt, text, model = "claude-opus-4-20250514") {
+    try {
+        const response = await fetch("https://api.claude.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${api_key}`
+            },
+            body: JSON.stringify({
+                model: model,
                 messages: [
                     { role: "system", content: prompt },
                     { role: "user", content: text }
