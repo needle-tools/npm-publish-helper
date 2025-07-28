@@ -172,7 +172,7 @@ ${cmd.replaceAll(/Authorization.+Bearer [^ ]+/g, `Authorization Bearer ${obfusca
     logger.debug(`Repository dispatch invoked successfully for workflow: ${workflow} in repository: ${repository}`);
     if (options.webhookUrl) {
         const repositoryWorkflowUrl = `https://github.com/${repository}/actions/workflows/${workflow}`;
-        sendMessageToWebhook(options.webhookUrl, `🤖 **Repository dispatch in ${repository}** invoked successfully: [workflow: ${workflow}](<${repositoryWorkflowUrl}>)`, { logger });
+        sendMessageToWebhook(options.webhookUrl, `🤖 **Triggered ${workflow} workflow in ${repository}** – [workflow](<${repositoryWorkflowUrl}>)`, { logger });
     }
     return { success: true };
 }
