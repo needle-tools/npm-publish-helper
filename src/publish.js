@@ -144,8 +144,13 @@ export async function publish(args) {
     // Update package version
     {
         const currentVersion = packageJson.version;
-        let nextVersion = `${packageJson.version}`;
+
+        let nextVersion = currentVersion;
         if (args.useTagInVersion && args.tag && args.tag !== "latest") {
+            // First remove the existing tag the pre-release tag if it exists
+            const dashIndex = nextVersion.indexOf('-');
+            if (dashIndex > 0) nextVersion = nextVersion.substring(0, dashIndex);
+            // Then append the new tag
             logger.info(`Adding tag '${args.tag}' to version.`);
             nextVersion += `-${args.tag}`;
         }
