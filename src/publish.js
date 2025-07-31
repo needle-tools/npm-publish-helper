@@ -219,168 +219,169 @@ export async function publish(args) {
     // publish package
     let packageVersionPublished = null;
     let needsPublish = true;
-    {
-        try {
-            const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
-            logger.info(`Checking if package is already published (${cmd})`);
-            packageVersionPublished = execSync(cmd, {
-                cwd: packageDirectory,
-                stdio: 'pipe',
-                env: env
-            }).toString().trim();
-        }
-        catch (error) {
-            logger.warn(`Package version not found ${packageJson.name}@${packageJson.version}: ${error.message}`);
-        }
-
-        needsPublish = !packageVersionPublished || packageVersionPublished !== packageJson.version;
-        if (!needsPublish) {
-            logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
-            if (webhook) {
-                await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\`\n→ ${htmlUrlMarkdown}`, { logger });
+    try {
+        {
+            try {
+                const cmd = `npm view ${packageJson.name}@${packageJson.version} version`;
+                logger.info(`Checking if package is already published (${cmd})`);
+                packageVersionPublished = execSync(cmd, {
+                    cwd: packageDirectory,
+                    stdio: 'pipe',
+                    env: env
+                }).toString().trim();
             }
-        }
-        else {
-            logger.info(`Package view result ${packageVersionPublished}`);
-
-
-            let cmd = `npm publish --access public`
-            if (dryRun) {
-                cmd += ' --dry-run';
-                logger.info(`Dry run mode enabled, not actually publishing package.`);
+            catch (error) {
+                logger.warn(`Package version not found ${packageJson.name}@${packageJson.version}: ${error.message}`);
             }
 
-            // If the package is a pre-release version, we can use a tag to publish it because we don't want npm to automatically set the tag to 'latest'.
-            const isPrereleaseVersion = packageJson.version.includes('-');
-            if ((isPrereleaseVersion && args.setLatestTag == undefined) || args.setLatestTag === false) {
-                const prereleaseTag = args.tag || 'dev';
-                logger.info(`Package version is a pre-release version, using tag '${prereleaseTag}' for publishing.`);
-                cmd += ` --tag ${prereleaseTag}`;
-            }
-
-            const publishVersionString = packageJson.version;
-            logger.info(`Publishing package ${packageJson.name}@${publishVersionString}: '${cmd}'`);
-            const res = tryExecSync(cmd, {
-                cwd: packageDirectory,
-                env: env
-            });
-            // If multiple workflows run at the same time it's possible that the package view command doenst find the package yet but the publish command fails with 403 and a message that the package already exists.
-            if (!res.success
-                && (
-                    res.output?.toString()?.includes(`You cannot publish over the previously published versions: ${publishVersionString}`) ||
-                    res.output?.toString()?.includes(`Failed to save packument. A common cause is if you try to publish a new package before the previous package has been fully processed`)
-                )) {
-                logger.info(`💡 Package ${packageJson.name}@${publishVersionString} already exists, skipping publish.`);
-            }
-            else if (res.success) {
-                logger.info(`📦 Package ${packageJson.name}@${publishVersionString} published successfully: ${htmlUrl}`);
+            needsPublish = !packageVersionPublished || packageVersionPublished !== packageJson.version;
+            if (!needsPublish) {
+                logger.info(`💡 Package ${packageJson.name}@${packageJson.version} already published.`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\`\n→ ${htmlUrlMarkdown}`, { logger });
+                    await sendMessageToWebhook(webhook, `💡 **Package already published** \`${packageJson.name}@${packageJson.version}\`\n→ ${htmlUrlMarkdown}`, { logger });
                 }
             }
             else {
-                logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
-                if (webhook) {
-                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                logger.info(`Package view result ${packageVersionPublished}`);
+
+
+                let cmd = `npm publish --access public`
+                if (dryRun) {
+                    cmd += ' --dry-run';
+                    logger.info(`Dry run mode enabled, not actually publishing package.`);
                 }
-                throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+
+                // If the package is a pre-release version, we can use a tag to publish it because we don't want npm to automatically set the tag to 'latest'.
+                const isPrereleaseVersion = packageJson.version.includes('-');
+                if ((isPrereleaseVersion && args.setLatestTag == undefined) || args.setLatestTag === false) {
+                    const prereleaseTag = args.tag || 'dev';
+                    logger.info(`Package version is a pre-release version, using tag '${prereleaseTag}' for publishing.`);
+                    cmd += ` --tag ${prereleaseTag}`;
+                }
+
+                const publishVersionString = packageJson.version;
+                logger.info(`Publishing package ${packageJson.name}@${publishVersionString}: '${cmd}'`);
+                const res = tryExecSync(cmd, {
+                    cwd: packageDirectory,
+                    env: env
+                });
+                // If multiple workflows run at the same time it's possible that the package view command doenst find the package yet but the publish command fails with 403 and a message that the package already exists.
+                if (!res.success
+                    && (
+                        res.output?.toString()?.includes(`You cannot publish over the previously published versions: ${publishVersionString}`) ||
+                        res.output?.toString()?.includes(`Failed to save packument. A common cause is if you try to publish a new package before the previous package has been fully processed`)
+                    )) {
+                    logger.info(`💡 Package ${packageJson.name}@${publishVersionString} already exists, skipping publish.`);
+                }
+                else if (res.success) {
+                    logger.info(`📦 Package ${packageJson.name}@${publishVersionString} published successfully: ${htmlUrl}`);
+                    if (webhook) {
+                        await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\`\n→ ${htmlUrlMarkdown}`, { logger });
+                    }
+                }
+                else {
+                    logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
+                    if (webhook) {
+                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                    }
+                    throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
+                }
             }
         }
-    }
 
 
 
-    // set tag
-    {
-        if (dryRun) {
-            logger.info(`Dry run mode enabled, not actually setting tag.`);
+        // set tag
+        {
+            if (dryRun) {
+                logger.info(`Dry run mode enabled, not actually setting tag.`);
+            }
+            else if (args.tag) {
+                const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
+                logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+                const res = tryExecSync(cmd, {
+                    cwd: packageDirectory,
+                    env: env
+                });
+                if (res.success) {
+                    logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+                    if (webhook) {
+                        await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+                    }
+                }
+                else {
+                    logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
+                    if (webhook) {
+                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                    }
+                }
+            }
         }
-        else if (args.tag) {
-            const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
-            logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+
+
+        if (args.createGitTag) {
+
+            let tagName = packageJson.version;
+
+            if (args.createGitTagPrefix?.length) {
+                if (!args.createGitTagPrefix?.endsWith("/") && !args.createGitTagPrefix?.endsWith("-")) {
+                    logger.warn(`Git tag prefix '${args.createGitTagPrefix}' does not end with a slash or dash. Appending '/' to the prefix.`);
+                    args.createGitTagPrefix += '/'; // ensure the prefix ends with a slash
+                }
+                tagName = `${args.createGitTagPrefix}${tagName}`; // use the prefix provided by the user
+            }
+            else {
+                tagName = `release/${tagName}`; // default prefix if no prefix is provided
+            }
+
+            let cmd = `git tag -a ${tagName} -m "Published ${packageJson.version}" && git push origin ${tagName}`;
+
+            // set username and email for git
+            const gitUserName = process.env.GITHUB_ACTOR || process.env.GIT_USER_NAME || 'Needle Npm Publish';
+            const gitUserEmail = process.env.GIT_USER_EMAIL || 'hi+git@needle.tools';
+            cmd = `git config user.name "${gitUserName}" && git config user.email "${gitUserEmail}" && ${cmd}`;
+
+            logger.info(`Creating git tag with command: ${cmd}`);
             const res = tryExecSync(cmd, {
                 cwd: packageDirectory,
                 env: env
             });
             if (res.success) {
-                logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+                logger.info(`✅ Successfully created git tag: ${packageJson.version}`);
                 if (webhook) {
-                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+                    await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${tagName}\` for package \`${packageJson.name}\``, { logger });
                 }
             }
             else {
-                logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
-                if (webhook) {
-                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                const isTagPointingToThisCommit = res.output.includes(`${tagName} -> ${tagName} (already exists)`);
+                if (isTagPointingToThisCommit && res.output?.includes("Updates were rejected because the tag already exists in the remote.")) {
+                    logger.info(`💡 Git tag ${packageJson.version} already exists, skipping creation.\n\`\`\`\n${res.error || res.output}\n\`\`\``);
+                    if (webhook) {
+                        await sendMessageToWebhook(webhook, `💡 **Git tag already exists** \`${tagName}\` for package \`${packageJson.name}\``, { logger });
+                    }
+                }
+                else {
+                    logger.error(`❌ Failed to create git tag: ${res.error}`);
+                    if (webhook) {
+                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to create git tag** \`${tagName}\`:`, res.error, { logger });
+                    }
                 }
             }
         }
+
+        logger.info(`✅ Publish process completed for package ${packageJson.name}@${packageJson.version}`);
     }
+    finally {
+        // Restore original package.json
+        logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
+        writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
 
 
-    if (args.createGitTag) {
-
-        let tagName = packageJson.version;
-
-        if (args.createGitTagPrefix?.length) {
-            if (!args.createGitTagPrefix?.endsWith("/") && !args.createGitTagPrefix?.endsWith("-")) {
-                logger.warn(`Git tag prefix '${args.createGitTagPrefix}' does not end with a slash or dash. Appending '/' to the prefix.`);
-                args.createGitTagPrefix += '/'; // ensure the prefix ends with a slash
-            }
-            tagName = `${args.createGitTagPrefix}${tagName}`; // use the prefix provided by the user
-        }
-        else {
-            tagName = `release/${tagName}`; // default prefix if no prefix is provided
-        }
-
-        let cmd = `git tag -a ${tagName} -m "Published ${packageJson.version}" && git push origin ${tagName}`;
-
-        // set username and email for git
-        const gitUserName = process.env.GITHUB_ACTOR || process.env.GIT_USER_NAME || 'Needle Npm Publish';
-        const gitUserEmail = process.env.GIT_USER_EMAIL || 'hi+git@needle.tools';
-        cmd = `git config user.name "${gitUserName}" && git config user.email "${gitUserEmail}" && ${cmd}`;
-
-        logger.info(`Creating git tag with command: ${cmd}`);
-        const res = tryExecSync(cmd, {
-            cwd: packageDirectory,
-            env: env
-        });
-        if (res.success) {
-            logger.info(`✅ Successfully created git tag: ${packageJson.version}`);
-            if (webhook) {
-                await sendMessageToWebhook(webhook, `✅ **Created git tag** \`${tagName}\` for package \`${packageJson.name}\``, { logger });
-            }
-        }
-        else {
-            const isTagPointingToThisCommit = res.output.includes(`${tagName} -> ${tagName} (already exists)`);
-            if (isTagPointingToThisCommit && res.output?.includes("Updates were rejected because the tag already exists in the remote.")) {
-                logger.info(`💡 Git tag ${packageJson.version} already exists, skipping creation.\n\`\`\`\n${res.error || res.output}\n\`\`\``);
-                if (webhook) {
-                    await sendMessageToWebhook(webhook, `💡 **Git tag already exists** \`${tagName}\` for package \`${packageJson.name}\``, { logger });
-                }
-            }
-            else {
-                logger.error(`❌ Failed to create git tag: ${res.error}`);
-                if (webhook) {
-                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to create git tag** \`${tagName}\`:`, res.error, { logger });
-                }
-            }
-        }
+        // Write outputs for CI
+        tryWriteOutputForCI("package-version", packageJson.version, { logger });
+        tryWriteOutputForCI("package-name", packageJson.name, { logger });
+        tryWriteOutputForCI("package-published", needsPublish, { logger });
     }
-
-
-    // Restore original package.json
-    logger.info(`♻ Restoring original package.json at ${packageJsonPath}`);
-    writeFileSync(packageJsonPath, _originalPackageJson, 'utf-8');
-
-
-    // Write outputs for CI
-    tryWriteOutputForCI("package-version", packageJson.version, { logger });
-    tryWriteOutputForCI("package-name", packageJson.name, { logger });
-    tryWriteOutputForCI("package-published", needsPublish, { logger });
-
-
-    logger.info(`✅ Publish process completed for package ${packageJson.name}@${packageJson.version}`);
 }
 
 
