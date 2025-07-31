@@ -173,7 +173,7 @@ program.command('diff', 'Get git changes')
             if (summary.success) {
                 console.log(summary.summary);
                 if (options.webhook) {
-                    await sendMessageToWebhookWithCodeblock(options.webhook.toString(), "Diff LLM summary", summary.summary, {
+                    await sendMessageToWebhook(options.webhook.toString(), summary.summary, {
                         logger
                     });
                 }
