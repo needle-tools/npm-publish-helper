@@ -6,12 +6,12 @@ import { createCodeBlocks } from './utils.js';
  * Sends a message to a webhook URL (Discord or Slack).
  * @param {string} webhookUrl - The webhook URL to send the message to.
  * @param {string} message - The message to send.
- * @param {string | Error} error - The error message
+ * @param {string | Error} codeblock - The error message
  * @param {{logger:import('@caporal/core').Logger}} options - Additional arguments
  * @return {Promise<void>} - A promise that resolves to an object indicating success or failure.
  */
-export async function sendMessageToWebhookWithError(webhookUrl, message, error, options) {
-    const blocks = createCodeBlocks(error, 1500);
+export async function sendMessageToWebhookWithCodeblock(webhookUrl, message, codeblock, options) {
+    const blocks = createCodeBlocks(codeblock, 1500);
     if (blocks.length >= 1) {
         message = `${message}\n${blocks[0]}`;
         await sendMessageToWebhook(webhookUrl, message, options);

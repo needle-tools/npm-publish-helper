@@ -3,7 +3,7 @@
 import caporal from '@caporal/core';
 import { updateNpmdef } from "../src/npmdef.js";
 import { build, compile } from '../src/compile.js';
-import { sendMessageToWebhook } from '../src/webhooks.js';
+import { sendMessageToWebhook, sendMessageToWebhookWithCodeblock } from '../src/webhooks.js';
 import { runLLM } from '../src/utils.llm.js';
 
 
@@ -137,9 +137,10 @@ program.command('diff', 'Get git changes')
     .option('--start-time <start_time>', 'Start time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() })
     .option('--end-time <end_time>', 'End time for the diff (ISO format)', { required: false, validator: program.STRING, default: new Date().toISOString() })
     .option('--llm-api-key <llm_api_key>', 'LLM API key for summarization', { required: false, validator: program.STRING })
+    .option('--webhook <webhook>', 'Webhook URL to send notifications', { required: false, validator: program.STRING })
     .action(async ({ logger, args, options }) => {
         logger.silent = !options.debug; // Set logger silent mode based on debug option
-        if(options.debug) logger.level = "debug";
+        if (options.debug) logger.level = "debug";
         const { getDiffSince } = await import('../src/utils.git.js');
         const directory = args.directory.toString();
         const startTime = options.startTime.toString();
@@ -153,11 +154,15 @@ program.command('diff', 'Get git changes')
         });
         if (diff === null) {
             logger.error('No changes found or an error occurred while fetching the diff.');
+            if (options.webhook) {
+                await sendMessageToWebhook(options.webhook.toString(), "No changes found or an error occurred while fetching the diff.", { logger });
+            }
             return;
         }
         if (llm_api_key) {
             if (options.debug) {
                 console.log(diff);
+                await sendMessageToWebhookWithCodeblock(options.webhook?.toString(), "Diff", diff, { logger });
             }
             const summary = await runLLM({
                 prompt: "Summarize the changes made to the repository in prose. Group similar changes together. Don't make lists. Don't include any description of your own. Include code snippets and examples. Include author names.",
@@ -167,8 +172,18 @@ program.command('diff', 'Get git changes')
             });
             if (summary.success) {
                 console.log(summary.summary);
+                if (options.webhook) {
+                    await sendMessageToWebhookWithCodeblock(options.webhook.toString(), "Diff LLM summary", summary.summary, {
+                        logger
+                    });
+                }
             } else {
                 logger.error(`Failed to summarize the diff: ${summary.error}`);
+                if (options.webhook) {
+                    await sendMessageToWebhookWithCodeblock(options.webhook.toString(), `Diff LLM summary failed`, summary.error, {
+                        logger
+                    });
+                }
                 process.exit(1);
             }
         }

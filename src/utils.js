@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import { createHash } from "crypto";
 import { appendFileSync, existsSync, readFileSync } from 'fs';
-import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
+import { sendMessageToWebhook, sendMessageToWebhookWithCodeblock } from './webhooks.js';
 
 
 /**
@@ -164,7 +164,7 @@ ${cmd.replaceAll(/Authorization.+Bearer [^ ]+/g, `Authorization Bearer ${obfusca
         }, { logError: false });
     if (!res.success) {
         if (options.webhookUrl) {
-            sendMessageToWebhookWithError(options.webhookUrl, `**Failed to invoke repository dispatch**:`, res.error, { logger });
+            sendMessageToWebhookWithCodeblock(options.webhookUrl, `**Failed to invoke repository dispatch**:`, res.error, { logger });
         }
         return { success: false, error: res.error };
     }

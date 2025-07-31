@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { sendMessageToWebhook, sendMessageToWebhookWithError } from './webhooks.js';
+import { sendMessageToWebhook, sendMessageToWebhookWithCodeblock } from './webhooks.js';
 import { obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
 import { runLLM } from './utils.llm.js';
@@ -173,7 +173,7 @@ export async function publish(args) {
             if (!res.success) {
                 logger.error(`Failed to update package version: ${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to update package version** \`${packageJson.name}\`:`, res.error, { logger });
+                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to update package version** \`${packageJson.name}\`:`, res.error, { logger });
                 }
                 throw new Error(`Failed to update package version: ${res.error}`);
             }
@@ -281,7 +281,7 @@ export async function publish(args) {
             else {
                 logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
                 }
                 throw new Error(`Failed to publish package ${packageJson.name}@${packageJson.version}: ${res.error}`);
             }
@@ -311,7 +311,7 @@ export async function publish(args) {
             else {
                 logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
                 }
             }
         }
@@ -362,7 +362,7 @@ export async function publish(args) {
             else {
                 logger.error(`❌ Failed to create git tag: ${res.error}`);
                 if (webhook) {
-                    await sendMessageToWebhookWithError(webhook, `❌ **Failed to create git tag** \`${tagName}\`:`, res.error, { logger });
+                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to create git tag** \`${tagName}\`:`, res.error, { logger });
                 }
             }
         }
