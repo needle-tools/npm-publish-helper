@@ -134,9 +134,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'  # Fetch all submodules recursively
-          token: ${{ secrets.GH_RELEASE_TOKEN }} # Required to allow action to create tags
+        # with:
+          # submodules: 'recursive'  # Fetch all submodules recursively
+          # token: ${{ secrets.GH_RELEASE_TOKEN }} # Required to allow action to create tags
         
       - name: Setup Node.js
         uses: actions/setup-node@v4
