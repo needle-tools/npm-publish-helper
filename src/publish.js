@@ -204,13 +204,25 @@ export async function publish(args) {
 
     // set config
     {
-        const registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
+        let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
+        if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
+        
         const configCmd = `npm config set //${registryUrlWithoutScheme}:_authToken ${env.NPM_TOKEN}`;
         logger.info(`Setting npm config to registry //${registryUrlWithoutScheme}`);
         execSync(configCmd, {
             cwd: packageDirectory,
             env
         });
+
+        const isNeedleRegistry = args.registry?.includes(".needle.tools") || false;
+        if (isNeedleRegistry) {
+            logger.info(`Setting npm config for Needle registry to always-auth true`);
+            const cmd = "npm config set //packages.needle.tools/:always-auth true";
+            execSync(cmd, {
+                cwd: packageDirectory,
+                env
+            });
+        }
     }
 
     const htmlUrl = args.registry?.includes("npmjs") ? `https://www.npmjs.com/package/${packageJson.name}/v/${packageJson.version}` : (args.registry + `/${packageJson.name}`);
