@@ -208,7 +208,7 @@ export async function publish(args) {
         if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
 
         const configCmd = `npm config set //${registryUrlWithoutScheme}:_authToken ${env.NPM_TOKEN}`;
-        logger.info(`Setting npm config to registry //${registryUrlWithoutScheme}`);
+        logger.info(`Setting npm config to registry: npm config set //${registryUrlWithoutScheme}:_authToken ${obfuscateToken(env.NPM_TOKEN)}`);
         execSync(configCmd, {
             cwd: packageDirectory,
             env
