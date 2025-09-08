@@ -47,7 +47,7 @@ export async function compile(options) {
     options.logger.info("Install TypeScript...");
     execSync('npm install --no-save typescript');
     let cmd = `npx --yes --package typescript tsc --outDir lib --noEmit false --incremental false --skipLibCheck`;
-    options.logger.info("Compile TSC");
+    options.logger.info("Compile Typescript in " + (options.directory || process.cwd()));
     const res = tryExecSync(cmd, { stdio: "inherit", cwd: options.directory || process.cwd() }, { logger: options.logger, logError: true });
     if (res.success === false) {
         throw new Error("TypeScript compilation failed");
