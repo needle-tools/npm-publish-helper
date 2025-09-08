@@ -40,7 +40,13 @@ program.command('compile-library', 'Compile library')
 program.command('prepare-publish', 'Compile and update')
     .configure({ visible: false, strictOptions: false })
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
+    .option('--verbose', 'Enable verbose logging', { required: false, validator: program.BOOLEAN, default: false })
     .action(async ({ logger, args, options }) => {
+        if (options.verbose) {
+            logger.level = "debug";
+            logger.silent = false;
+        }
+
         logger.info('Preparing package to publish...');
         await updateNpmdef({ logger });
         await compile({ logger });

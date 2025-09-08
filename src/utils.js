@@ -59,7 +59,9 @@ export function tryGatherFullErrorLog(errorString, options = {}) {
         } catch (e) {
             options?.logger?.error(`Failed to read log file at ${logfilePath}: ${e.message}`);
         }
-
+    }
+    else {
+        options?.logger?.debug(`No complete log file path found in error message.`);
     }
     return null;
 }
