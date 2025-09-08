@@ -275,7 +275,8 @@ export async function publish(args) {
                 logger.info(`Publishing package ${packageJson.name}@${publishVersionString}: '${cmd}'`);
                 const res = tryExecSync(cmd, {
                     cwd: packageDirectory,
-                    env: env
+                    env: env,
+                    stdio: 'inherit',
                 });
                 // If multiple workflows run at the same time it's possible that the package view command doenst find the package yet but the publish command fails with 403 and a message that the package already exists.
                 if (!res.success
