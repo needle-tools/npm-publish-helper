@@ -41,6 +41,7 @@ function updateUnityPackage(packageJson, options) {
             content.packageName = packageJson.name;
             content.packageVersion = packageJson.version;
             writeFileSync(fp, JSON.stringify(content, null, 4));
+            options?.logger.info(`Updated npmdef at ${fp}`);
         }
     }
     else {

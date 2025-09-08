@@ -22,7 +22,7 @@ export function getMd5Hash(text) {
  */
 export function tryExecSync(cmd, execOptions, options = {}) {
     try {
-        const res = execSync(cmd, execOptions).toString().trim();
+        const res = execSync(cmd, execOptions)?.toString().trim();
         return { success: true, output: res };
     } catch (error) {
         const oneLineError = error.message.split(/\n/)[0];

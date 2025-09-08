@@ -44,6 +44,7 @@ export async function build(options) {
  * @param {{directory?:string, logger:import("@caporal/core").Logger}} options
  */
 export async function compile(options) {
+    options.logger.info("Install TypeScript...");
     execSync('npm install --no-save typescript');
     let cmd = `npx --yes --package typescript tsc --outDir lib --noEmit false --incremental false --skipLibCheck`;
     options.logger.info("Compile TSC");
