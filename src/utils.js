@@ -53,6 +53,8 @@ export function tryGatherFullErrorLog(errorString, options = {}) {
                 options?.logger?.debug(`Reading complete error log from ${logfilePath}`);
                 const content = readFileSync(logfilePath, 'utf8');
                 return content.trim();
+            } else {
+                options?.logger?.warn(`Log file not found at ${logfilePath}`);
             }
         } catch (e) {
             options?.logger?.error(`Failed to read log file at ${logfilePath}: ${e.message}`);
