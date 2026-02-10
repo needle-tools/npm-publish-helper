@@ -449,8 +449,13 @@ export async function publish(args) {
                 }
                 else {
                     logger.error(`❌ Failed to create git tag: ${res.error}`);
+                    const errorStr = res.error?.toString() || res.output?.toString() || '';
+                    let errorMsg = `❌ **Failed to create git tag** \`${tagName}\`:`;
+                    if (errorStr.includes('Permission') || errorStr.includes('denied') || errorStr.includes('403')) {
+                        errorMsg += `\n⚠️ Add \`contents: write\` permission to your workflow`;
+                    }
                     if (webhook) {
-                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to create git tag** \`${tagName}\`:`, res.error, { logger });
+                        await sendMessageToWebhookWithCodeblock(webhook, errorMsg, res.error, { logger });
                     }
                 }
             }
