@@ -69,6 +69,7 @@ program.command('publish', 'Publish npm package')
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
     .option("--access-token <access-token>", "NPM access token", { required: false, validator: program.STRING })
     .option("--oidc", "Use OIDC (OpenID Connect) for authentication instead of access tokens. Requires npm >= 11.5 and a trusted publisher configured on npmjs.com. Works with GitHub Actions and GitLab CI/CD.", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--provenance", "Generate provenance attestations (enabled by default with --oidc for public repos). Set to false to disable.", { required: false, validator: program.BOOLEAN, default: undefined })
     .option("--dry-run", "Dry run mode, do not publish", { required: false, validator: program.BOOLEAN, default: false })
     .option("--override-name <name>", "Override package name", { required: false, validator: program.STRING })
     .option("--override-version <version>", "Override package version", { required: false, validator: program.STRING })
@@ -95,6 +96,7 @@ program.command('publish', 'Publish npm package')
             registry: registry,
             accessToken: options.accessToken?.toString() || null,
             useOidc: options.oidc === true,
+            provenance: options.provenance,
             useHashInVersion: options.versionHash === true, // default to false
             useTagInVersion: options.versionTag === true, // default to false
             createGitTag: options.createTag !== undefined, // default to false

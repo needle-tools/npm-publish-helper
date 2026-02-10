@@ -36,6 +36,15 @@ export type PublishOptions = {
      * Currently supported in GitHub Actions and GitLab CI/CD.
      */
     useOidc: boolean;
+    /**
+     * Generate provenance attestations linking the package to its source repo and build.
+     * - `true`: Always add --provenance flag
+     * - `false`: Never add --provenance flag
+     * - `undefined`: Auto-detect (enabled with OIDC for public repos only)
+     *
+     * Note: Provenance only works with public repositories.
+     */
+    provenance: boolean | undefined;
     tag: string | null | undefined;
     setLatestTag: boolean | undefined;
     useHashInVersion: boolean;

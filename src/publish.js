@@ -314,9 +314,17 @@ export async function publish(args) {
 
                 const registryUrl = args.registry || 'https://registry.npmjs.org/';
                 let cmd = `npm publish --access public --registry ${registryUrl}`
-                if (args.useOidc) {
-                    // Enable provenance to generate signed attestations linking the package to its source repo and build
-                    cmd += ' --provenance';
+
+                // Handle provenance flag
+                // Provenance only works with public repositories
+                const isPrivateRepo = process.env.GITHUB_REPOSITORY_VISIBILITY === 'private';
+                if (args.provenance === true || (args.useOidc && args.provenance !== false)) {
+                    if (isPrivateRepo) {
+                        logger.warn(`⚠ Provenance is not supported for private repositories. Skipping --provenance flag.`);
+                    } else {
+                        // Enable provenance to generate signed attestations linking the package to its source repo and build
+                        cmd += ' --provenance';
+                    }
                 }
                 if (dryRun) {
                     cmd += ' --dry-run';
