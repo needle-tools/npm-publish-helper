@@ -146,7 +146,11 @@ export async function publish(args) {
     if (webhook) {
         const commitMessageOneLiner = commitMessage?.trim().replaceAll("\n", " ");
         const commitUrl = event_data?.compare || `${repoUrl}/commit/${shortSha}`;
-        let msg = `🐱‍💻 **Publish package** \`${packageJson.name}\` – [commit](<${commitUrl}>)\n`;
+        // Build job URL from GitHub Actions environment variables
+        const jobUrl = process.env.GITHUB_SERVER_URL && process.env.GITHUB_REPOSITORY && process.env.GITHUB_RUN_ID
+            ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            : null;
+        let msg = `🐱‍💻 **Publish package** \`${packageJson.name}\` – [commit](<${commitUrl}>)${jobUrl ? ` | [job](<${jobUrl}>)` : ''}\n`;
         msg += "```\n";
         msg += `Repository: ${repoUrl}\n`;
         msg += `Short SHA: ${shortSha}${args.useTagInVersion ? ' (version+hash)' : ''}\n`;

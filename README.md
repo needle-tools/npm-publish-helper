@@ -42,7 +42,8 @@ Publishes the npm package from the specified directory.
 | `--version+tag`       | boolean | Appends the git tag name to the package version. Boolean flag.                                                                                                                    | `false` |
 | `--create-tag [prefix]` | string  | Creates a new git tag for the release. An optional prefix can be provided (e.g., `release/`). If no prefix is provided, it defaults to `release/`. If omitted, no git tag is created. |         |
 | `--webhook <webhook>`   | string  | URL of a webhook to send a notification to after publishing.                                                                                                                      |         |
-| `--access-token <access-token>`| string  | Your NPM access token, required for publishing.                                                                                                                                   |         |
+| `--access-token <access-token>`| string  | Your NPM access token for publishing (alternative to `--oidc`).                                                                                                                   |         |
+| `--oidc`                | boolean | Use OIDC (OpenID Connect) for authentication instead of access tokens. Requires npm 11.5+ and a trusted publisher configured on npmjs.com. See [OIDC Setup](#oidc-trusted-publishing). | `false` |
 | `--dry-run`           | boolean | Performs a dry run without actually publishing the package to the registry. Boolean flag.                                                                                         | `false` |
 | `--override-name <name>`| string  | Overrides the package name defined in `package.json`.                                                                                                                             |         |
 | `--override-version <version>` | string  | Overrides the package version defined in `package.json`.                                                                                                                     |         |
@@ -115,7 +116,80 @@ Gets git changes within a time range and can summarize them using an LLM. This c
 | `--llm-api-key <key>`   | string  | An optional LLM API key for summarizing the diff.                          |                                       |
 | `--webhook <webhook>`   | string  | URL of a webhook to send the diff or summary to.                           |                                       |
 
-**Example Github Action Workflow:**
+## OIDC Trusted Publishing
+
+OIDC (OpenID Connect) allows publishing to npm without storing long-lived tokens. Instead, GitHub Actions authenticates directly with npm using short-lived tokens.
+
+### Requirements
+- Node.js 24+ (includes npm 11.5+ with OIDC support)
+- Package must already exist on npmjs.com (first publish requires `--access-token`)
+- Trusted Publisher configured on npmjs.com
+
+### Setup Steps
+
+1. **First-time publish** (if package doesn't exist yet):
+   ```bash
+   npx needle-publish-helper publish "." --access-token "${{ secrets.NPM_TOKEN }}"
+   ```
+
+2. **Configure Trusted Publisher on npmjs.com:**
+   - Go to `https://www.npmjs.com/package/YOUR_PACKAGE_NAME/access`
+   - Click "Trusted Publisher" → "GitHub Actions"
+   - Enter:
+     - **Owner**: Your GitHub org/username (case-sensitive!)
+     - **Repository**: Your repo name
+     - **Workflow**: The workflow filename (e.g., `publish.yml`)
+
+3. **Update your workflow** to use OIDC:
+
+### Example OIDC Workflow
+
+```yml
+name: Publish
+on:
+  push:
+    branches:
+      - 'release/*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # Required for git tags
+      id-token: write   # Required for OIDC
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm install
+
+      - name: Publish
+        run: npx needle-publish-helper publish "." --oidc --webhook "${{ secrets.DISCORD_WEBHOOK }}" --tag "${{ github.ref_name }}" --version+tag --version+hash --create-tag release/
+```
+
+### Key Differences from Token-based Publishing
+- Use `--oidc` instead of `--access-token`
+- Add `permissions: id-token: write` to workflow
+- Use Node.js 24+ (for npm 11.5+)
+- No npm token secret needed
+
+### Troubleshooting
+
+If OIDC publishing fails:
+1. Verify Trusted Publisher config matches exactly (case-sensitive)
+2. Ensure workflow has `id-token: write` permission
+3. Check npm version is 11.5+ (`npm --version`)
+4. The `repository` field in package.json should match your GitHub repo (auto-added if missing)
+
+---
+
+## Example Workflows
+
+### Token-based Publishing (Legacy)
 
 ```yml
 name: Release Workflow
@@ -125,30 +199,20 @@ on:
       - 'release/*'
 
 jobs:
-  run-release-script:
+  publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    defaults:
-      run:
-        working-directory: .
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        # with:
-          # submodules: 'recursive'  # Fetch all submodules recursively
-          # token: ${{ secrets.GH_RELEASE_TOKEN }} # Required to allow action to create tags
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          
-      - name: Install dependencies
-        run: npm install
-        
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm install
+
       - name: Publish to npm
-        id: publish
-        run: npx --yes needle-publish-helper@stable publish "./dist" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --tag "${{github.ref_name}}" --version+tag --version+hash --create-tag release/
+        run: npx needle-publish-helper publish "./dist" --access-token "${{ secrets.NPM_TOKEN }}" --webhook "${{ secrets.DISCORD_WEBHOOK }}" --tag "${{ github.ref_name }}" --version+tag --version+hash --create-tag release/
 ```
 
 # Contact ✒️
