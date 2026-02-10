@@ -314,6 +314,10 @@ export async function publish(args) {
 
                 const registryUrl = args.registry || 'https://registry.npmjs.org/';
                 let cmd = `npm publish --access public --registry ${registryUrl}`
+                if (args.useOidc) {
+                    // Enable provenance to generate signed attestations linking the package to its source repo and build
+                    cmd += ' --provenance';
+                }
                 if (dryRun) {
                     cmd += ' --dry-run';
                     logger.info(`Dry run mode enabled, not actually publishing package.`);
