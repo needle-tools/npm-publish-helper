@@ -129,6 +129,20 @@ export async function publish(args) {
 
     processPackageJson(packageDirectory, packageJson, { logger });
 
+    // For OIDC: ensure repository field exists (required for provenance)
+    if (args.useOidc && repoUrl) {
+        const repoMatch = repoUrl.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+        if (repoMatch && !packageJson.repository?.url) {
+            const repoUrlNormalized = `https://github.com/${repoMatch[1]}/${repoMatch[2]}.git`;
+            logger.info(`Adding repository field for OIDC provenance: ${repoUrlNormalized}`);
+            packageJson.repository = {
+                type: 'git',
+                url: repoUrlNormalized
+            };
+            writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf-8');
+        }
+    }
+
     if (webhook) {
         const commitMessageOneLiner = commitMessage?.trim().replaceAll("\n", " ");
         const commitUrl = event_data?.compare || `${repoUrl}/commit/${shortSha}`;
