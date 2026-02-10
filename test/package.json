@@ -3,6 +3,10 @@
   "version": "2.0.0-alpha",
   "main": "index.js",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/needle-tools/npm-publish-helper.git"
+  },
   "scripts": {
     "prepublishOnly": "echo 'This is a prepublish script.'"
   }

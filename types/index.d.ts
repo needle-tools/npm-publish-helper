@@ -29,6 +29,13 @@ export type PublishOptions = {
 
     registry: string;
     accessToken: string | null | undefined;
+    /**
+     * Use OIDC (OpenID Connect) for authentication instead of access tokens.
+     * Requires npm >= 11.5 and a trusted publisher configured on npmjs.com.
+     * When enabled, the npm CLI will use the CI/CD provider's identity token.
+     * Currently supported in GitHub Actions and GitLab CI/CD.
+     */
+    useOidc: boolean;
     tag: string | null | undefined;
     setLatestTag: boolean | undefined;
     useHashInVersion: boolean;
