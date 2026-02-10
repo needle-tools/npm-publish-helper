@@ -291,10 +291,6 @@ export async function publish(args) {
 
                 const registryUrl = args.registry || 'https://registry.npmjs.org/';
                 let cmd = `npm publish --access public --registry ${registryUrl}`
-                if (args.useOidc) {
-                    cmd += ' --provenance';
-                    logger.info(`OIDC authentication enabled, adding --provenance flag for trusted publishing.`);
-                }
                 if (dryRun) {
                     cmd += ' --dry-run';
                     logger.info(`Dry run mode enabled, not actually publishing package.`);
@@ -337,14 +333,8 @@ export async function publish(args) {
                 else {
                     logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
 
-                    // Provide helpful OIDC troubleshooting information if OIDC was enabled
                     if (args.useOidc) {
-                        logger.error(`\nOIDC TROUBLESHOOTING:`);
-                        logger.error(`  • Trusted publisher configured? https://www.npmjs.com/package/${packageJson.name}/access`);
-                        logger.error(`  • Workflow has 'id-token: write' permission?`);
-                        logger.error(`  • package.json has 'repository' field matching GitHub repo?`);
-                        logger.error(`  • npm version >= 11.5? (Node 24+ recommended)`);
-                        logger.error(`  → Docs: https://docs.npmjs.com/trusted-publishers/\n`);
+                        logger.error(`\nOIDC: Check trusted publisher config at https://www.npmjs.com/package/${packageJson.name}/access`);
                     }
 
                     if (webhook) {
