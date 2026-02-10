@@ -334,7 +334,12 @@ export async function publish(args) {
                     logger.error(`❌ Failed to publish package ${packageJson.name}@${packageJson.version}\n${res.error}`);
 
                     if (args.useOidc) {
-                        logger.error(`\nOIDC: Check trusted publisher config at https://www.npmjs.com/package/${packageJson.name}/access`);
+                        const errorStr = res.error?.toString() || res.output?.toString() || '';
+                        if (errorStr.includes('repository.url') || errorStr.includes('repository information')) {
+                            logger.error(`\nOIDC: package.json needs a 'repository' field matching the GitHub repo`);
+                        } else {
+                            logger.error(`\nOIDC: Check trusted publisher config at https://www.npmjs.com/package/${packageJson.name}/access`);
+                        }
                     }
 
                     if (webhook) {
