@@ -7,41 +7,41 @@ on:
 
 
 jobs:
-    publish:
-        runs-on: ubuntu-latest
-        timeout-minutes: 5
-        defaults:
-          run:
-            working-directory: ./
+    # publish:
+    #     runs-on: ubuntu-latest
+    #     timeout-minutes: 5
+    #     defaults:
+    #       run:
+    #         working-directory: ./
 
-        steps:
-          - uses: actions/checkout@v4
+    #     steps:
+    #       - uses: actions/checkout@v4
 
-          - name: Setup Node.js
-            uses: actions/setup-node@v4
-            with:
-              node-version: '20'
-              registry-url: 'https://registry.npmjs.org'
+    #       - name: Setup Node.js
+    #         uses: actions/setup-node@v4
+    #         with:
+    #           node-version: '20'
+    #           registry-url: 'https://registry.npmjs.org'
 
-          - name: Install dependencies
-            run: npm install
+    #       - name: Install dependencies
+    #         run: npm install
 
-          - name: Run publish command
-            id: publish
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --tag github --version+tag --create-tag "test/" --llm-api-key "${{ secrets.LLM_API_KEY }}"
+    #       - name: Run publish command
+    #         id: publish
+    #         run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --tag github --version+tag --create-tag "test/" --llm-api-key "${{ secrets.LLM_API_KEY }}"
 
-          - name: Print output
-            run: |
-              echo "Package version: ${{ steps.publish.outputs.package-version }}"
+    #       - name: Print output
+    #         run: |
+    #           echo "Package version: ${{ steps.publish.outputs.package-version }}"
 
-          - name: Run publish without tag
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash
+    #       - name: Run publish without tag
+    #         run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash
 
-          - name: Run publish without commit hash
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}"
+    #       - name: Run publish without commit hash
+    #         run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}"
 
-          - name: Just add a tag
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --tag github-2
+    #       - name: Just add a tag
+    #         run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --tag github-2
 
     # OIDC-based publishing (Trusted Publishing)
     # Requires: Trusted Publisher configured on npmjs.com for the package
