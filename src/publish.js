@@ -78,7 +78,12 @@ export async function publish(args) {
             const npmVersion = npmVersionResult.output.trim();
             const [major, minor] = npmVersion.split('.').map(Number);
             if (major < 11 || (major === 11 && minor < 5)) {
-                logger.warn(`⚠ npm ${npmVersion} may not support OIDC. Version 11.5+ is required.`);
+                const errorMsg = `OIDC requires npm 11.5+, but found ${npmVersion}. Use Node.js 24+ or run 'npm install -g npm@latest'`;
+                logger.error(`❌ ${errorMsg}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `❌ **OIDC failed**: ${errorMsg}`, { logger });
+                }
+                throw new Error(errorMsg);
             }
         }
     }
