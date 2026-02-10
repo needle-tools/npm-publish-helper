@@ -44,54 +44,25 @@ jobs:
             run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --access-token "${{ secrets.NPM_TOKEN }}" --tag github-2
 
     # OIDC-based publishing (Trusted Publishing)
-    # NOTE: First publish of a package MUST use --access-token. OIDC only works for existing packages.
-    #
-    # To enable OIDC for this package:
-    # 1. Ensure the package exists on npmjs.com (publish once with --access-token)
-    # 2. Go to https://www.npmjs.com/package/publish-helper-test-package/access
-    # 3. Click "Settings" → "Trusted Publisher" → "GitHub Actions"
-    # 4. Configure: owner (needle-tools), repository (npm-publish-helper), workflow (test.yml)
+    # Requires: Trusted Publisher configured on npmjs.com for the package
     publish-oidc:
         runs-on: ubuntu-latest
         timeout-minutes: 5
         permissions:
           contents: read
-          id-token: write  # Required for OIDC authentication
-        defaults:
-          run:
-            working-directory: ./
-
+          id-token: write
         steps:
           - uses: actions/checkout@v4
 
-          - name: Setup Node.js
-            uses: actions/setup-node@v4
+          - uses: actions/setup-node@v4
             with:
-              # Node 24 includes npm with OIDC support built-in
               node-version: '24'
               registry-url: 'https://registry.npmjs.org'
 
-          - name: Check versions
-            run: |
-              echo "node: $(node --version)"
-              echo "npm: $(npm --version)"
+          - run: npm install
 
-          - name: Install dependencies
-            run: npm install
-
-          - name: Test direct npm publish with OIDC (actual publish)
-            working-directory: ./test
-            continue-on-error: true
-            run: |
-              echo "Testing direct npm publish with --provenance (actual publish, not dry-run)..."
-              npm version 2.0.0-oidc-direct-test.$(git rev-parse --short HEAD) --no-git-tag-version
-              # NODE_AUTH_TOKEN="" clears any token to force OIDC
-              NODE_AUTH_TOKEN="" npm publish --access public --provenance --tag oidc-direct || echo "Direct test failed"
-
-          - name: Run publish with OIDC
+          - name: Publish with OIDC
             id: publish-oidc
-            run: NODE_AUTH_TOKEN="" npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --oidc --version+hash --tag oidc --version+tag
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --oidc --version+hash --tag oidc --version+tag
 
-          - name: Print output
-            run: |
-              echo "Package version: ${{ steps.publish-oidc.outputs.package-version }}"
+          - run: echo "Published ${{ steps.publish-oidc.outputs.package-version }}"

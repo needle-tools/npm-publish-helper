@@ -72,15 +72,13 @@ export async function publish(args) {
         logger.warn(`No access token provided and OIDC not enabled. Publishing to registry ${args.registry} may fail.`);
     }
     if (args.useOidc) {
-        logger.info(`OIDC authentication enabled. Ensure your CI/CD has id-token: write permissions and a trusted publisher is configured on npmjs.com.`);
-        // Check npm version for OIDC support
+        // Check npm version for OIDC support (requires 11.5+)
         const npmVersionResult = tryExecSync('npm --version', { cwd: packageDirectory });
         if (npmVersionResult.success) {
             const npmVersion = npmVersionResult.output.trim();
             const [major, minor] = npmVersion.split('.').map(Number);
-            logger.info(`npm version: ${npmVersion}`);
             if (major < 11 || (major === 11 && minor < 5)) {
-                logger.warn(`⚠ npm version ${npmVersion} may not support OIDC. Version 11.5+ is recommended.`);
+                logger.warn(`⚠ npm ${npmVersion} may not support OIDC. Version 11.5+ is required.`);
             }
         }
     }
@@ -251,43 +249,11 @@ export async function publish(args) {
         //     });
         // }
     } else {
-        logger.info(`Skipping npm config auth token setup - using OIDC authentication`);
+        logger.info(`Using OIDC authentication`);
 
-        // Check for OIDC environment variables (GitHub Actions sets these)
-        const hasOidcEnv = !!(process.env.ACTIONS_ID_TOKEN_REQUEST_URL && process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN);
-        if (hasOidcEnv) {
-            logger.info(`✓ GitHub Actions OIDC environment detected`);
-            logger.info(`  ACTIONS_ID_TOKEN_REQUEST_URL: ${process.env.ACTIONS_ID_TOKEN_REQUEST_URL ? '(set)' : '(not set)'}`);
-            logger.info(`  ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN ? '(set)' : '(not set)'}`);
-        } else {
-            logger.warn(`⚠ GitHub Actions OIDC environment variables not detected!`);
-            logger.warn(`  This may indicate:`);
-            logger.warn(`  - The workflow doesn't have 'id-token: write' permission`);
-            logger.warn(`  - Not running in GitHub Actions`);
-            logger.warn(`  - Running on a self-hosted runner without OIDC support`);
-        }
-
-        // Log token-related env vars that might interfere with OIDC
-        // npm won't use OIDC if ANY token variable is set (even to empty string)
-        const tokenVars = ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'NPM_CONFIG__AUTH', 'NPM_CONFIG_TOKEN'];
-        const setTokenVars = tokenVars.filter(v => v in env);
-        if (setTokenVars.length > 0) {
-            logger.warn(`⚠ Token environment variables detected that may interfere with OIDC: ${setTokenVars.join(', ')}`);
-            logger.info(`  Removing these variables to allow OIDC fallback...`);
-        } else {
-            logger.info(`✓ No conflicting token environment variables detected`);
-        }
-
-        // Clear any existing auth tokens that might interfere with OIDC
-        // npm OIDC works best when there's no conflicting token configuration
-        let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
-        if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
-        try {
-            const clearCmd = `npm config delete //${registryUrlWithoutScheme}:_authToken`;
-            logger.info(`Clearing any existing auth token for OIDC: ${clearCmd}`);
-            tryExecSync(clearCmd, { cwd: packageDirectory, env });
-        } catch {
-            // Ignore errors - token might not exist
+        // Warn if OIDC environment is not detected
+        if (!process.env.ACTIONS_ID_TOKEN_REQUEST_URL) {
+            logger.warn(`⚠ OIDC environment not detected. Ensure workflow has 'id-token: write' permission.`);
         }
     }
 
@@ -373,74 +339,12 @@ export async function publish(args) {
 
                     // Provide helpful OIDC troubleshooting information if OIDC was enabled
                     if (args.useOidc) {
-                        const errorStr = res.error?.toString() || res.output?.toString() || '';
-                        const is404Error = errorStr.includes('404') || errorStr.includes('Not found') || errorStr.includes('Not Found');
-                        const is401Error = errorStr.includes('401') || errorStr.includes('Unauthorized');
-                        const is403Error = errorStr.includes('403') || errorStr.includes('Forbidden');
-                        const isNeedAuthError = errorStr.includes('ENEEDAUTH') || errorStr.includes('need auth') || errorStr.includes('You need to authorize');
-
-                        logger.error(`\n${'='.repeat(80)}`);
-                        logger.error(`OIDC TROUBLESHOOTING GUIDE`);
-                        logger.error(`${'='.repeat(80)}`);
-
-                        if (isNeedAuthError) {
-                            logger.error(`\n⚠️  ERROR: ENEEDAUTH - Authentication Required`);
-                            logger.error(`   npm is not detecting the OIDC environment. This usually means:\n`);
-                            logger.error(`   a) MISSING PERMISSIONS: Workflow needs 'id-token: write' permission`);
-                            logger.error(`      Add to your workflow:`);
-                            logger.error(`      permissions:`);
-                            logger.error(`        contents: read`);
-                            logger.error(`        id-token: write\n`);
-                            logger.error(`   b) NPM VERSION TOO OLD: OIDC requires npm >= 11.5`);
-                            logger.error(`      Update Node.js to v22+ or run: npm install -g npm@latest\n`);
-                            logger.error(`   c) NOT IN GITHUB ACTIONS: OIDC only works in supported CI environments`);
-                            logger.error(`      Currently supported: GitHub Actions, GitLab CI/CD\n`);
-                            logger.error(`   d) SELF-HOSTED RUNNER: OIDC requires cloud-hosted runners\n`);
-                            logger.error(`   Environment check:`);
-                            logger.error(`      ACTIONS_ID_TOKEN_REQUEST_URL: ${process.env.ACTIONS_ID_TOKEN_REQUEST_URL ? '✓ set' : '✗ NOT SET'}`);
-                            logger.error(`      ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN ? '✓ set' : '✗ NOT SET'}`);
-                            logger.error(`      GITHUB_ACTIONS: ${process.env.GITHUB_ACTIONS ? '✓ set' : '✗ NOT SET'}\n`);
-                        } else if (is404Error) {
-                            logger.error(`\n⚠️  ERROR: 404 Not Found`);
-                            logger.error(`   This usually means one of the following:\n`);
-                            logger.error(`   a) FIRST-TIME PUBLISH: The package doesn't exist on npmjs.com yet.`);
-                            logger.error(`      → First publish MUST be done with a token: --access-token <token>`);
-                            logger.error(`      → After first publish, configure trusted publisher, then use --oidc\n`);
-                            logger.error(`   b) TRUSTED PUBLISHER NOT CONFIGURED for this package.`);
-                            logger.error(`      → Go to: https://www.npmjs.com/package/${packageJson.name}/access`);
-                            logger.error(`      → Click "Settings" → "Trusted Publisher" → "GitHub Actions"`);
-                            logger.error(`      → Configure: organization/user, repository, workflow filename\n`);
-                            logger.error(`   c) WORKFLOW FILENAME MISMATCH`);
-                            logger.error(`      → The workflow filename on npmjs.com must EXACTLY match your .yml file`);
-                            logger.error(`      → Check for typos, case sensitivity, and path differences\n`);
-                        } else if (is401Error) {
-                            logger.error(`\n⚠️  ERROR: 401 Unauthorized`);
-                            logger.error(`   The OIDC token was not accepted. Check:\n`);
-                            logger.error(`   a) GitHub Actions must have 'id-token: write' permission`);
-                            logger.error(`   b) Trusted publisher must be configured on npmjs.com`);
-                            logger.error(`   c) npm version must be >= 11.5\n`);
-                        } else if (is403Error) {
-                            logger.error(`\n⚠️  ERROR: 403 Forbidden`);
-                            logger.error(`   Access denied. Check:\n`);
-                            logger.error(`   a) You have publish permissions for this package`);
-                            logger.error(`   b) Trusted publisher configuration matches your workflow exactly`);
-                            logger.error(`   c) Repository owner/name matches the trusted publisher config\n`);
-                        } else {
-                            logger.error(`\nOIDC authentication failed. Please check the following:\n`);
-                        }
-
-                        logger.error(`CHECKLIST:`);
-                        logger.error(`  □ Package exists on npmjs.com (first publish requires --access-token)`);
-                        logger.error(`  □ Trusted publisher configured: https://www.npmjs.com/package/${packageJson.name}/access`);
-                        logger.error(`  □ Workflow has 'id-token: write' permission`);
-                        logger.error(`  □ npm version >= 11.5 (current: run 'npm --version' to check)`);
-                        logger.error(`  □ Using cloud-hosted runner (not self-hosted)`);
-                        logger.error(`  □ Workflow filename matches exactly (case-sensitive)`);
-                        logger.error(`  □ package.json has 'repository' field matching GitHub repo (case-sensitive)\n`);
-                        logger.error(`DOCUMENTATION:`);
-                        logger.error(`  → npm Trusted Publishing: https://docs.npmjs.com/trusted-publishers/`);
-                        logger.error(`  → npm Provenance: https://docs.npmjs.com/generating-provenance-statements/`);
-                        logger.error(`${'='.repeat(80)}\n`);
+                        logger.error(`\nOIDC TROUBLESHOOTING:`);
+                        logger.error(`  • Trusted publisher configured? https://www.npmjs.com/package/${packageJson.name}/access`);
+                        logger.error(`  • Workflow has 'id-token: write' permission?`);
+                        logger.error(`  • package.json has 'repository' field matching GitHub repo?`);
+                        logger.error(`  • npm version >= 11.5? (Node 24+ recommended)`);
+                        logger.error(`  → Docs: https://docs.npmjs.com/trusted-publishers/\n`);
                     }
 
                     if (webhook) {
