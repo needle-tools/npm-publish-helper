@@ -340,7 +340,15 @@ export async function publish(args) {
                     if (webhook) {
                         let errorMsg = `❌ **Failed to publish package** \`${packageJson.name}@${packageJson.version}\`:`;
                         if (args.useOidc) {
-                            errorMsg += `\n⚠️ OIDC was enabled. See logs for troubleshooting guide or visit: https://docs.npmjs.com/trusted-publishers/`;
+                            // Extract org/repo from git remote URL
+                            const repoMatch = repoUrl?.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+                            const workflowFile = process.env.GITHUB_WORKFLOW_REF?.split('@')[0]?.split('/').pop() || 'unknown';
+                            errorMsg += `\n⚠️ OIDC failed. Configure [trusted publisher](<https://www.npmjs.com/package/${packageJson.name}/access>):`;
+                            if (repoMatch) {
+                                errorMsg += `\n• Owner: \`${repoMatch[1]}\``;
+                                errorMsg += `\n• Repository: \`${repoMatch[2]}\``;
+                            }
+                            errorMsg += `\n• Workflow: \`${workflowFile}\``;
                         }
                         await sendMessageToWebhookWithCodeblock(webhook, errorMsg, res.error, { logger });
                     }

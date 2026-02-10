@@ -8,21 +8,18 @@ jobs:
     publish:
         runs-on: ubuntu-latest
         timeout-minutes: 5
-        defaults:
-          run:
-            working-directory: ./
-
+        permissions:
+          contents: read
+          id-token: write
         steps:
           - uses: actions/checkout@v4
 
-          - name: Setup Node.js
-            uses: actions/setup-node@v4
+          - uses: actions/setup-node@v4
             with:
-              node-version: '20'
+              node-version: '24'
               registry-url: 'https://registry.npmjs.org'
 
-          - name: Install dependencies
-            run: npm install
+          - run: npm install
 
-          - name: Run publish command
-            run: npx . publish "." --webhook "${{ secrets.DISCORD_WEBHOOK }}" --access-token "${{ secrets.NPM_TOKEN }}" --version+hash --create-tag --tag ${{ github.ref_name }} --llm-api-key "${{ secrets.LLM_API_KEY }}"
+          - name: Publish
+            run: npx . publish "." --webhook "${{ secrets.DISCORD_WEBHOOK }}" --oidc --version+hash --create-tag --tag ${{ github.ref_name }} --llm-api-key "${{ secrets.LLM_API_KEY }}"
