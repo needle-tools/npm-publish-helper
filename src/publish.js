@@ -407,10 +407,15 @@ export async function publish(args) {
             else if (args.tag) {
                 const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
                 logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-                const res = tryExecSync(cmd, {
+                // For OIDC: don't pass custom env - let npm inherit the full parent environment
+                // This ensures all OIDC-related env vars are available to npm
+                const execOptions = {
                     cwd: packageDirectory,
-                    env: env
-                });
+                };
+                if (!args.useOidc) {
+                    execOptions.env = env;
+                }
+                const res = tryExecSync(cmd, execOptions);
                 if (res.success) {
                     logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
                     if (webhook) {
