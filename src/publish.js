@@ -61,6 +61,7 @@ export async function publish(args) {
     if (args.useOidc) {
         logger.info(`Authentication: OIDC (Trusted Publishing)`);
     } else {
+        logger.info(`Authentication: Token`);
         logger.info(`Token: '${obfuscateToken(args.accessToken)}'`);
     }
     logger.info(`Repository: ${repoUrl}`);
@@ -252,6 +253,7 @@ export async function publish(args) {
 
     // set config
     if (!args.useOidc) {
+        // Traditional token authentication
         let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
         if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
 
@@ -261,17 +263,8 @@ export async function publish(args) {
             cwd: packageDirectory,
             env
         });
-
-        // const isNeedleRegistry = args.registry?.includes(".needle.tools") || false;
-        // if (isNeedleRegistry) {
-        //     logger.info(`Setting npm config for Needle registry to always-auth true`);
-        //     const cmd = "npm config set //packages.needle.tools/:always-auth true";
-        //     execSync(cmd, {
-        //         cwd: packageDirectory,
-        //         env
-        //     });
-        // }
     } else {
+        // OIDC mode
         logger.info(`Using OIDC authentication`);
 
         // Warn if OIDC environment is not detected
@@ -331,10 +324,16 @@ export async function publish(args) {
                     logger.info(`Dry run mode enabled, not actually publishing package.`);
                 }
 
-                // If the package is a pre-release version, we can use a tag to publish it because we don't want npm to automatically set the tag to 'latest'.
+                // Handle --tag flag for npm publish
+                // Using --tag during publish works with both OIDC and token authentication
                 const isPrereleaseVersion = packageJson.version.includes('-');
-                if ((isPrereleaseVersion && args.setLatestTag == undefined) || args.setLatestTag === false) {
-                    const prereleaseTag = args.tag || 'dev';
+                if (args.tag) {
+                    // User explicitly provided a tag - use it for publishing
+                    logger.info(`Using tag '${args.tag}' for publishing.`);
+                    cmd += ` --tag ${args.tag}`;
+                } else if ((isPrereleaseVersion && args.setLatestTag == undefined) || args.setLatestTag === false) {
+                    // Pre-release version without explicit tag - use 'dev' to avoid setting as 'latest'
+                    const prereleaseTag = 'dev';
                     logger.info(`Package version is a pre-release version, using tag '${prereleaseTag}' for publishing.`);
                     cmd += ` --tag ${prereleaseTag}`;
                 }
@@ -399,35 +398,12 @@ export async function publish(args) {
 
 
 
-        // set tag
-        {
-            if (dryRun) {
-                logger.info(`Dry run mode enabled, not actually setting tag.`);
-            }
-            else if (args.tag) {
-                const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
-                logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-                // For OIDC: don't pass custom env - let npm inherit the full parent environment
-                // This ensures all OIDC-related env vars are available to npm
-                const execOptions = {
-                    cwd: packageDirectory,
-                };
-                if (!args.useOidc) {
-                    execOptions.env = env;
-                }
-                const res = tryExecSync(cmd, execOptions);
-                if (res.success) {
-                    logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
-                    if (webhook) {
-                        await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
-                    }
-                }
-                else {
-                    logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
-                    if (webhook) {
-                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
-                    }
-                }
+        // Note: Tag is set during publish using --tag flag (see above)
+        // No need for separate npm dist-tag add command
+        if (args.tag && !dryRun) {
+            logger.info(`✅ Tag '${args.tag}' was set during publish for ${packageJson.name}@${packageJson.version}`);
+            if (webhook) {
+                await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
             }
         }
 
