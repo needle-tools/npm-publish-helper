@@ -398,12 +398,37 @@ export async function publish(args) {
 
 
 
-        // Note: Tag is set during publish using --tag flag (see above)
-        // No need for separate npm dist-tag add command
-        if (args.tag && !dryRun) {
-            logger.info(`✅ Tag '${args.tag}' was set during publish for ${packageJson.name}@${packageJson.version}`);
-            if (webhook) {
-                await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+        // set tag
+        // This allows setting tags on already-published packages
+        // When publishing, the tag is set via --tag flag, but if the package already exists, we need to use npm dist-tag add
+        {
+            if (dryRun) {
+                logger.info(`Dry run mode enabled, not actually setting tag.`);
+            }
+            else if (args.tag) {
+                const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
+                logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+                // For OIDC: don't pass custom env - let npm inherit the full parent environment
+                // This ensures all OIDC-related env vars are available to npm
+                const execOptions = {
+                    cwd: packageDirectory,
+                };
+                if (!args.useOidc) {
+                    execOptions.env = env;
+                }
+                const res = tryExecSync(cmd, execOptions);
+                if (res.success) {
+                    logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+                    if (webhook) {
+                        await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+                    }
+                }
+                else {
+                    logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
+                    if (webhook) {
+                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                    }
+                }
             }
         }
 
