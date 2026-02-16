@@ -279,6 +279,7 @@ export async function publish(args) {
     // publish package
     let packageVersionPublished = null;
     let needsPublish = true;
+    let tagSetDuringPublish = false; // Track if tag was set during npm publish
     try {
         {
             try {
@@ -360,6 +361,10 @@ export async function publish(args) {
                 }
                 else if (res.success) {
                     logger.info(`📦 Package ${packageJson.name}@${publishVersionString} published successfully: ${htmlUrl}`);
+                    // Mark that tag was set during publish if --tag was used
+                    if (args.tag && cmd.includes(`--tag ${args.tag}`)) {
+                        tagSetDuringPublish = true;
+                    }
                     if (webhook) {
                         await sendMessageToWebhook(webhook, `📦 **Package published successfully** \`${packageJson.name}@${publishVersionString}\`\n→ ${htmlUrlMarkdown}`, { logger });
                     }
@@ -399,13 +404,12 @@ export async function publish(args) {
 
 
         // set tag
-        // This allows setting tags on already-published packages
-        // When publishing, the tag is set via --tag flag, but if the package already exists, we need to use npm dist-tag add
+        // Only run npm dist-tag add if the tag wasn't already set during publish (e.g., package was already published)
         {
             if (dryRun) {
                 logger.info(`Dry run mode enabled, not actually setting tag.`);
             }
-            else if (args.tag) {
+            else if (args.tag && !tagSetDuringPublish) {
                 const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
                 logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
                 // For OIDC: don't pass custom env - let npm inherit the full parent environment
@@ -428,6 +432,12 @@ export async function publish(args) {
                     if (webhook) {
                         await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
                     }
+                }
+            }
+            else if (args.tag && tagSetDuringPublish) {
+                logger.info(`✅ Tag '${args.tag}' was already set during publish for ${packageJson.name}@${packageJson.version}`);
+                if (webhook) {
+                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
                 }
             }
         }
