@@ -186,6 +186,11 @@ If OIDC publishing fails:
 3. Check npm version is 11.5+ (`npm --version`)
 4. The `repository` field in package.json should match your GitHub repo (auto-added if missing)
 
+**Common error:** `OIDC requires npm 11.5+, but found 10.x`
+- This means your Node.js version ships with an older npm that doesn't support OIDC
+- **Fix:** Use Node.js 24+ in your workflow (`node-version: '24'`), which includes npm 11.5+
+- Alternatively, add a step to upgrade npm: `npm install -g npm@latest`
+
 ---
 
 ## Example Workflows
