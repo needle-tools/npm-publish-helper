@@ -44,7 +44,7 @@ export function sendMessageToWebhook(webhookUrl, message, options) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(15_000),
+            signal: AbortSignal.timeout(30_000),
         });
         return handleResponse(res);
     }
@@ -59,7 +59,7 @@ export function sendMessageToWebhook(webhookUrl, message, options) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(15_000),
+            signal: AbortSignal.timeout(30_000),
         });
         return handleResponse(res);
     }
@@ -74,7 +74,7 @@ export function sendMessageToWebhook(webhookUrl, message, options) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(15_000),
+            signal: AbortSignal.timeout(30_000),
         });
         return handleResponse(res);
     }
@@ -91,14 +91,19 @@ export function sendMessageToWebhook(webhookUrl, message, options) {
             // Check if the response is OK
             .then(response => {
                 if (!response.ok) {
-                    return { success: false, status: response.status, error: `Failed to send message: ${response.status} ${response.statusText}` };
+                    const msg = `Failed to send webhook message: ${response.status} ${response.statusText}`;
+                    console.error(msg);
+                    options?.logger.error(msg);
+                    return { success: false, status: response.status, error: msg };
                 }
                 return { success: true };
             })
             // Handle network errors
             .catch(error => {
-                options?.logger.error(`Error sending message to webhook: ${error.message}`);
-                return { success: false, status: 500, error: `Failed to send message: ${error.message}` };
+                const msg = `Error sending message to webhook: ${error.message}`;
+                console.error(msg);
+                options?.logger.error(msg);
+                return { success: false, status: 500, error: msg };
             });
     }
 
