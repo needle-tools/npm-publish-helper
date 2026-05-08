@@ -116,7 +116,8 @@ async function runDeepSeek(api_key, prompt, text) {
                 ],
                 max_tokens: 500,
                 temperature: 0.7
-            })
+            }),
+            signal: AbortSignal.timeout(60_000),
         });
 
         if (!response.ok) {
@@ -156,7 +157,8 @@ async function runClaude(api_key, prompt, text, model = "claude-opus-4-20250514"
                 ],
                 max_tokens: 500,
                 temperature: 0.7
-            })
+            }),
+            signal: AbortSignal.timeout(60_000),
         });
 
         if (!response.ok) {
