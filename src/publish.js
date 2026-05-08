@@ -8,6 +8,7 @@ import { runLLM } from './utils.llm.js';
 import { tryLoadGithubEventData } from './utils.github.js';
 import { updateNpmdef } from './npmdef.js';
 import { build, compile } from './compile.js';
+import { getVersionName } from './version-names.js';
 
 
 /**
@@ -201,6 +202,16 @@ export async function publish(args) {
             }
             else {
                 nextVersion += `-${epochSeconds}`;
+            }
+        }
+        if (args.useNameInVersion && shortSha) {
+            const name = getVersionName(shortSha);
+            logger.info(`Adding name '${name}' to version (derived from hash '${shortSha}').`);
+            if (nextVersion.includes('-')) {
+                nextVersion += `.${name}`;
+            }
+            else {
+                nextVersion += `-${name}`;
             }
         }
         if (args.useHashInVersion && shortSha) {

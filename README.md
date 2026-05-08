@@ -39,6 +39,8 @@ Publishes the npm package from the specified directory.
 | `--registry <registry>` | string  | Specifies the NPM registry to use (e.g., `https://registry.npmjs.org/`).                                                                                                         |         |
 | `--tag <tag>`           | string  | Sets the NPM tag to publish the package with (e.g., `latest`, `beta`).                                                                                                            |         |
 | `--version+hash`      | boolean | Appends the short git commit hash to the package version. Boolean flag.                                                                                                           | `false` |
+| `--version+time`      | boolean | Appends a Unix epoch timestamp (seconds) to the version. Ensures correct semver prerelease ordering so newer publishes always resolve as higher versions. Use with `--version+tag` and `--version+hash` for versions like `1.0.0-dev.1747000000.abc1234`. | `false` |
+| `--version+name`      | boolean | Appends a human-readable name derived from the commit hash (e.g., `julius-caesar`, `lord-pretzel`). Deterministic: same commit always gets the same name. | `false` |
 | `--version+tag`       | boolean | Appends the git tag name to the package version. Boolean flag.                                                                                                                    | `false` |
 | `--create-tag [prefix]` | string  | Creates a new git tag for the release. An optional prefix can be provided (e.g., `release/`). If no prefix is provided, it defaults to `release/`. If omitted, no git tag is created. |         |
 | `--webhook <webhook>`   | string  | URL of a webhook to send a notification to after publishing.                                                                                                                      |         |
@@ -169,7 +171,7 @@ jobs:
       - run: npm install
 
       - name: Publish
-        run: npx needle-publish-helper publish "." --oidc --webhook "${{ secrets.DISCORD_WEBHOOK }}" --tag "${{ github.ref_name }}" --version+tag --version+hash --create-tag release/
+        run: npx needle-publish-helper publish "." --oidc --webhook "${{ secrets.DISCORD_WEBHOOK }}" --tag "${{ github.ref_name }}" --version+tag --version+time --version+hash --create-tag release/
 ```
 
 ### Key Differences from Token-based Publishing
@@ -229,6 +231,7 @@ jobs:
             --oidc \
             --tag "${{ github.ref_name }}" \
             --version+tag \
+            --version+time \
             --version+hash \
             --create-tag release/ \
             --webhook "${{ secrets.DISCORD_WEBHOOK }}"
@@ -274,6 +277,7 @@ jobs:
             --access-token "${{ secrets.NPM_TOKEN }}" \
             --tag "${{ github.ref_name }}" \
             --version+tag \
+            --version+time \
             --version+hash \
             --create-tag release/ \
             --webhook "${{ secrets.DISCORD_WEBHOOK }}"

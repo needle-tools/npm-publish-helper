@@ -65,6 +65,7 @@ program.command('publish', 'Publish npm package')
     // .option("--set-latest-tag", "Update the 'latest' tag to the new version (default: undefined). If this option is not defined then the latest tag will only be automatically updated for stable versions (aka non pre-release versions)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--version+hash", "Include hash in version (default: false)", { required: false, validator: program.BOOLEAN, default: undefined })
     .option("--version+time", "Include epoch timestamp in version for correct semver prerelease ordering (default: false)", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--version+name", "Include a human-readable name in version derived from the commit hash (default: false)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--version+tag", "Include tag in version (default: false)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--create-tag", "Create a git tag. Default: null. Can be set to e.g. '--create-tag release/'", { required: false, validator: program.STRING })
     .option("--webhook <webhook>", "Webhook URL to send notifications", { required: false, validator: program.STRING })
@@ -100,6 +101,7 @@ program.command('publish', 'Publish npm package')
             provenance: options.provenance,
             useHashInVersion: options.versionHash === true, // default to false
             useTimeInVersion: options.versionTime === true, // default to false
+            useNameInVersion: options.versionName === true, // default to false
             useTagInVersion: options.versionTag === true, // default to false
             createGitTag: options.createTag !== undefined, // default to false
             createGitTagPrefix: options.createTag !== undefined ? options.createTag.toString() : null,

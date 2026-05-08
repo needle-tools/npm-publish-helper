@@ -49,6 +49,7 @@ export type PublishOptions = {
     setLatestTag: boolean | undefined;
     useHashInVersion: boolean;
     useTimeInVersion: boolean;
+    useNameInVersion: boolean;
     useTagInVersion: boolean;
     createGitTag: boolean;
     createGitTagPrefix: string | null | undefined;
