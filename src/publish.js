@@ -193,6 +193,16 @@ export async function publish(args) {
             logger.info(`Adding tag '${args.tag}' to version.`);
             nextVersion += `-${args.tag}`;
         }
+        if (args.useTimeInVersion) {
+            const epochSeconds = Math.floor(Date.now() / 1000);
+            logger.info(`Adding epoch timestamp '${epochSeconds}' to version.`);
+            if (nextVersion.includes('-')) {
+                nextVersion += `.${epochSeconds}`;
+            }
+            else {
+                nextVersion += `-${epochSeconds}`;
+            }
+        }
         if (args.useHashInVersion && shortSha) {
             if (nextVersion.includes('-')) {
                 nextVersion += `.${shortSha}`;
