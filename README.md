@@ -193,6 +193,9 @@ If OIDC publishing fails:
 - **Fix:** Use Node.js 24+ in your workflow (`node-version: '24'`), which includes npm 11.5+
 - Alternatively, add a step to upgrade npm: `npm install -g npm@latest`
 
+**`npm dist-tag add` with OIDC:**
+`npm dist-tag` doesn't yet support OIDC directly (see [npm/cli#8547](https://github.com/npm/cli/issues/8547)). When `--tag` is passed it is usually set during `npm publish` itself (which works with OIDC). For the case where the package is already published and only the dist-tag needs to be updated, this helper transparently exchanges the GitHub OIDC token for a short-lived npm token via npm's `/-/npm/v1/oidc/token/exchange/package/<name>` endpoint (the same approach as [electron/npm-trusted-auth-action](https://github.com/electron/npm-trusted-auth-action)) and uses it for the `dist-tag add` call. The exchanged token is masked in GitHub Actions logs.
+
 ---
 
 ## Example Workflows

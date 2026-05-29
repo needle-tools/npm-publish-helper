@@ -9,6 +9,7 @@ import { tryLoadGithubEventData } from './utils.github.js';
 import { updateNpmdef } from './npmdef.js';
 import { build, compile } from './compile.js';
 import { getVersionName } from './version-names.js';
+import { exchangeOidcForNpmToken } from './utils.oidc.js';
 
 
 /**
@@ -433,12 +434,32 @@ export async function publish(args) {
             else if (args.tag && !tagSetDuringPublish) {
                 const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
                 logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-                // For OIDC: don't pass custom env - let npm inherit the full parent environment
-                // This ensures all OIDC-related env vars are available to npm
                 const execOptions = {
                     cwd: packageDirectory,
                 };
-                if (!args.useOidc) {
+                if (args.useOidc) {
+                    // Workaround for npm/cli#8547: `npm dist-tag add` does not support OIDC yet.
+                    // Exchange the GitHub OIDC token for a short-lived npm token via the
+                    // registry's OIDC exchange endpoint (same approach as electron/npm-trusted-auth-action).
+                    const exchange = await exchangeOidcForNpmToken({
+                        packageName: packageJson.name,
+                        registry: args.registry,
+                        logger,
+                    });
+                    if (!exchange.success) {
+                        logger.error(`Failed to obtain npm token via OIDC exchange for dist-tag: ${exchange.error}`);
+                        if (webhook) {
+                            await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed OIDC token exchange for dist-tag** \`${args.tag}\` on \`${packageJson.name}@${packageJson.version}\`:`, exchange.error, { logger });
+                        }
+                        throw new Error(`OIDC token exchange failed: ${exchange.error}`);
+                    }
+                    let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
+                    if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
+                    execOptions.env = {
+                        ...env,
+                        [`npm_config_//${registryUrlWithoutScheme}:_authToken`]: exchange.token,
+                    };
+                } else {
                     execOptions.env = env;
                 }
                 const res = tryExecSync(cmd, execOptions);
