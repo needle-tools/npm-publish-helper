@@ -61,7 +61,7 @@ program.command('prepare-publish', 'Compile and update')
 program.command('publish', 'Publish npm package')
     .argument('<directory>', 'Directory to publish', { validator: program.STRING })
     .option("--registry <registry>", "NPM registry to use", { required: false, validator: program.STRING })
-    .option("--tag <tag>", "NPM tag to create/update", { required: false, validator: program.STRING })
+    .option("--tag <tag...>", "NPM tag(s) to create/update. Can be passed multiple times (e.g. --tag version-2 --tag latest). The first tag is applied during `npm publish`; the rest are applied via `npm dist-tag add`.", { required: false })
     // .option("--set-latest-tag", "Update the 'latest' tag to the new version (default: undefined). If this option is not defined then the latest tag will only be automatically updated for stable versions (aka non pre-release versions)", { required: false, validator: program.BOOLEAN, default: false })
     .option("--version+hash", "Include hash in version (default: false)", { required: false, validator: program.BOOLEAN, default: undefined })
     .option("--version+time", "Include epoch timestamp in version for correct semver prerelease ordering (default: false)", { required: false, validator: program.BOOLEAN, default: false })
@@ -82,7 +82,10 @@ program.command('publish', 'Publish npm package')
         const { publish } = await import('../src/publish.js');
         const directory = (args.directory || process.cwd()).toString();
         const registry = (options.registry || 'https://registry.npmjs.org/').toString();
-        const tag = options.tag?.toString() || null;
+        // Caporal returns a string for a single --tag and an array for multiple. Normalize.
+        const tags = options.tag === undefined || options.tag === null
+            ? []
+            : (Array.isArray(options.tag) ? options.tag : [options.tag]).map(t => t.toString());
         if (options.createTag === "true") {
             options.createTag = '';
         }
@@ -106,7 +109,7 @@ program.command('publish', 'Publish npm package')
             createGitTag: options.createTag !== undefined, // default to false
             createGitTagPrefix: options.createTag !== undefined ? options.createTag.toString() : null,
             dryRun: options.dryRun === true,
-            tag: tag,
+            tag: tags.length > 0 ? tags : null,
             setLatestTag: undefined, //options.setLatestTag === undefined ? undefined : options.setLatestTag === true,
             webhookUrl: options.webhook?.toString() || null,
             overrideName: options.overrideName?.toString() || null,

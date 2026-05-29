@@ -91,22 +91,35 @@ export async function publish(args) {
         }
     }
 
-    // Remove slahes from the end of the tag (this may happen if the tag is provided by github ref_name
-    if (args.tag?.includes("/")) {
-        logger.warn(`Tag '${args.tag}' contains slashes - using last part as tag.`);
-        const parts = args.tag.split('/');
-        let found = false;
-        for (let i = parts.length - 1; i >= 0; i--) {
-            if (parts[i].length > 0) {
-                found = true;
-                args.tag = parts[i];
-                break;
+    // Normalize args.tag into an array of tags. Accepts string, string[], or null/undefined.
+    // Each tag is sanitized: if it contains slashes (e.g. a github ref_name like "cli/latest")
+    // we keep the last non-empty segment.
+    /** @type {string[]} */
+    const tags = (() => {
+        if (args.tag == null) return [];
+        const raw = Array.isArray(args.tag) ? args.tag : [args.tag];
+        const out = [];
+        for (const t of raw) {
+            if (typeof t !== 'string' || t.length === 0) continue;
+            if (t.includes('/')) {
+                logger.warn(`Tag '${t}' contains slashes - using last part as tag.`);
+                const parts = t.split('/');
+                let picked = null;
+                for (let i = parts.length - 1; i >= 0; i--) {
+                    if (parts[i].length > 0) { picked = parts[i]; break; }
+                }
+                if (!picked) throw new Error(`Tag '${t}' is not valid`);
+                out.push(picked);
+            } else {
+                out.push(t);
             }
         }
-        if (!found) {
-            throw new Error(`Tag '${args.tag}' is not valid`);
-        }
-    }
+        // Deduplicate while preserving order
+        return Array.from(new Set(out));
+    })();
+    // Keep args.tag as the primary tag (string | null) so downstream code & webhooks remain backwards-compatible.
+    args.tag = tags[0] ?? null;
+    const additionalTags = tags.slice(1);
 
 
     /** @type {string | null} */
@@ -168,7 +181,8 @@ export async function publish(args) {
         msg += `Build time: ${buildTime}\n`;
         msg += `Registry: ${args.registry}\n`;
         msg += `Auth: ${args.useOidc ? 'OIDC (Trusted Publishing)' : obfuscateToken(args.accessToken)}\n`;
-        msg += `Tag: ${args.tag || '-'}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
+        const tagsLabel = tags.length > 0 ? tags.join(', ') : '-';
+        msg += `Tag: ${tagsLabel}${args.useTagInVersion ? ' (version+tag)' : ''}${args.createGitTag ? ' (creating git tag)' : ''}\n`;
         msg += "```";
         await sendMessageToWebhook(webhook, msg, { logger });
         if (llm_summary) {
@@ -425,61 +439,70 @@ export async function publish(args) {
 
 
 
-        // set tag
-        // Only run npm dist-tag add if the tag wasn't already set during publish (e.g., package was already published)
+        // set tag(s)
+        // The primary tag (args.tag) may already have been applied via `npm publish --tag` above.
+        // Any additional tags (and the primary one if publish didn't apply it) are set via `npm dist-tag add`.
         {
             if (dryRun) {
-                logger.info(`Dry run mode enabled, not actually setting tag.`);
+                if (tags.length > 0) logger.info(`Dry run mode enabled, not actually setting tag(s).`);
             }
-            else if (args.tag && !tagSetDuringPublish) {
-                const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${args.tag}`;
-                logger.info(`Setting tag '${args.tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-                const execOptions = {
-                    cwd: packageDirectory,
-                };
-                if (args.useOidc) {
-                    // Workaround for npm/cli#8547: `npm dist-tag add` does not support OIDC yet.
-                    // Exchange the GitHub OIDC token for a short-lived npm token via the
-                    // registry's OIDC exchange endpoint (same approach as electron/npm-trusted-auth-action).
-                    const exchange = await exchangeOidcForNpmToken({
-                        packageName: packageJson.name,
-                        registry: args.registry,
-                        logger,
-                    });
-                    if (!exchange.success) {
-                        logger.error(`Failed to obtain npm token via OIDC exchange for dist-tag: ${exchange.error}`);
-                        if (webhook) {
-                            await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed OIDC token exchange for dist-tag** \`${args.tag}\` on \`${packageJson.name}@${packageJson.version}\`:`, exchange.error, { logger });
-                        }
-                        throw new Error(`OIDC token exchange failed: ${exchange.error}`);
-                    }
-                    let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
-                    if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
-                    execOptions.env = {
-                        ...env,
-                        [`npm_config_//${registryUrlWithoutScheme}:_authToken`]: exchange.token,
-                    };
-                } else {
-                    execOptions.env = env;
-                }
-                const res = tryExecSync(cmd, execOptions);
-                if (res.success) {
-                    logger.info(`Successfully set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}`);
+            else {
+                /** @type {string[]} */
+                const tagsToApply = [];
+                if (args.tag && !tagSetDuringPublish) tagsToApply.push(args.tag);
+                for (const t of additionalTags) tagsToApply.push(t);
+
+                // If the primary tag was already set during publish, still surface the success message.
+                if (args.tag && tagSetDuringPublish) {
+                    logger.info(`✅ Tag '${args.tag}' was already set during publish for ${packageJson.name}@${packageJson.version}`);
                     if (webhook) {
                         await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
                     }
                 }
-                else {
-                    logger.error(`Failed to set tag '${args.tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
-                    if (webhook) {
-                        await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+
+                if (tagsToApply.length > 0) {
+                    /** @type {NodeJS.ProcessEnv} */
+                    let distTagEnv = env;
+                    if (args.useOidc) {
+                        // Workaround for npm/cli#8547: `npm dist-tag add` does not support OIDC yet.
+                        // Exchange the GitHub OIDC token once and reuse it for all dist-tag operations.
+                        const exchange = await exchangeOidcForNpmToken({
+                            packageName: packageJson.name,
+                            registry: args.registry,
+                            logger,
+                        });
+                        if (!exchange.success) {
+                            logger.error(`Failed to obtain npm token via OIDC exchange for dist-tag: ${exchange.error}`);
+                            if (webhook) {
+                                await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed OIDC token exchange for dist-tag** on \`${packageJson.name}@${packageJson.version}\`:`, exchange.error, { logger });
+                            }
+                            throw new Error(`OIDC token exchange failed: ${exchange.error}`);
+                        }
+                        let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
+                        if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
+                        distTagEnv = {
+                            ...env,
+                            [`npm_config_//${registryUrlWithoutScheme}:_authToken`]: exchange.token,
+                        };
                     }
-                }
-            }
-            else if (args.tag && tagSetDuringPublish) {
-                logger.info(`✅ Tag '${args.tag}' was already set during publish for ${packageJson.name}@${packageJson.version}`);
-                if (webhook) {
-                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${args.tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+
+                    for (const tag of tagsToApply) {
+                        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag}`;
+                        logger.info(`Setting tag '${tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+                        const res = tryExecSync(cmd, { cwd: packageDirectory, env: distTagEnv });
+                        if (res.success) {
+                            logger.info(`Successfully set tag '${tag}' for package ${packageJson.name}@${packageJson.version}`);
+                            if (webhook) {
+                                await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+                            }
+                        }
+                        else {
+                            logger.error(`Failed to set tag '${tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
+                            if (webhook) {
+                                await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                            }
+                        }
+                    }
                 }
             }
         }

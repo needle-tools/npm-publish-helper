@@ -58,11 +58,11 @@ jobs:
             with:
               node-version: '24'
               registry-url: 'https://registry.npmjs.org'
-
+ 
           - run: npm install
 
           - name: Publish with OIDC
             id: publish-oidc
-            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --oidc --tag oidc --version+time --version+hash --version+tag
+            run: npx . publish "./test" --webhook "${{ secrets.DISCORD_WEBHOOK_TEST_RELEASE }}" --oidc --tag "test-tag" --tag "another-tag" --version+time --version+hash --version+tag
 
           - run: echo "Published ${{ steps.publish-oidc.outputs.package-version }}"

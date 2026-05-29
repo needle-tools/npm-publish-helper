@@ -45,7 +45,13 @@ export type PublishOptions = {
      * Note: Provenance only works with public repositories.
      */
     provenance: boolean | undefined;
-    tag: string | null | undefined;
+    /**
+     * NPM dist-tag(s) to apply to the published version.
+     * - A single string or one-element array: applied via `npm publish --tag`.
+     * - Multiple tags: the first is applied via `npm publish --tag`, the remaining are
+     *   applied via `npm dist-tag add` (which uses an OIDC-exchanged token under `useOidc`).
+     */
+    tag: string | string[] | null | undefined;
     setLatestTag: boolean | undefined;
     useHashInVersion: boolean;
     useTimeInVersion: boolean;
