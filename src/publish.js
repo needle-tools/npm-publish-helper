@@ -1,8 +1,6 @@
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdtempSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { tmpdir } from 'os';
-import { join as pathJoin } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithCodeblock } from './webhooks.js';
 import { obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
@@ -11,7 +9,6 @@ import { tryLoadGithubEventData } from './utils.github.js';
 import { updateNpmdef } from './npmdef.js';
 import { build, compile } from './compile.js';
 import { getVersionName } from './version-names.js';
-import { exchangeOidcForNpmToken } from './utils.oidc.js';
 
 
 /**
@@ -442,19 +439,16 @@ export async function publish(args) {
 
 
         // set tag(s)
-        // The primary tag (args.tag) may already have been applied via `npm publish --tag` above.
-        // Any additional tags (and the primary one if publish didn't apply it) are set via `npm dist-tag add`.
+        // The primary tag (args.tag) is applied via `npm publish --tag` (works with OIDC).
+        // Additional tags would require `npm dist-tag add`, which does NOT work under OIDC
+        // today — see https://github.com/npm/cli/issues/8547. The registry rejects the
+        // OIDC-exchanged token with 401 for dist-tag operations (token is publish-scoped).
         {
             if (dryRun) {
                 if (tags.length > 0) logger.info(`Dry run mode enabled, not actually setting tag(s).`);
             }
             else {
-                /** @type {string[]} */
-                const tagsToApply = [];
-                if (args.tag && !tagSetDuringPublish) tagsToApply.push(args.tag);
-                for (const t of additionalTags) tagsToApply.push(t);
-
-                // If the primary tag was already set during publish, still surface the success message.
+                // Surface the primary tag's success first (applied during publish).
                 if (args.tag && tagSetDuringPublish) {
                     logger.info(`✅ Tag '${args.tag}' was already set during publish for ${packageJson.name}@${packageJson.version}`);
                     if (webhook) {
@@ -462,64 +456,44 @@ export async function publish(args) {
                     }
                 }
 
+                // Tags that still need `npm dist-tag add`: the primary if publish didn't apply it,
+                // plus any user-requested additional tags.
+                /** @type {string[]} */
+                const tagsToApply = [];
+                if (args.tag && !tagSetDuringPublish) tagsToApply.push(args.tag);
+                for (const t of additionalTags) tagsToApply.push(t);
+
                 if (tagsToApply.length > 0) {
-                    /** @type {NodeJS.ProcessEnv} */
-                    let distTagEnv = env;
-                    /** @type {string | null} */
-                    let tempNpmrcDir = null;
                     if (args.useOidc) {
-                        // Workaround for npm/cli#8547: `npm dist-tag add` does not support OIDC yet.
-                        // Exchange the GitHub OIDC token once and reuse it for all dist-tag operations.
-                        const exchange = await exchangeOidcForNpmToken({
-                            packageName: packageJson.name,
-                            registry: args.registry,
-                            logger,
-                        });
-                        if (!exchange.success) {
-                            logger.error(`Failed to obtain npm token via OIDC exchange for dist-tag: ${exchange.error}`);
-                            if (webhook) {
-                                await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed OIDC token exchange for dist-tag** on \`${packageJson.name}@${packageJson.version}\`:`, exchange.error, { logger });
-                            }
-                            throw new Error(`OIDC token exchange failed: ${exchange.error}`);
-                        }
-                        let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
-                        if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
-
-                        // Write a dedicated .npmrc with the exchanged token and point npm at it via
-                        // NPM_CONFIG_USERCONFIG. This bypasses whatever .npmrc setup-node wrote
-                        // (which contains a literal `${NODE_AUTH_TOKEN}` template that, for reasons
-                        // we can't reliably influence from a child process, results in no auth
-                        // header being sent — verified via `npm http fetch PUT 401 ... need: Basic, Bearer`).
-                        tempNpmrcDir = mkdtempSync(pathJoin(tmpdir(), 'needle-npmrc-'));
-                        const tempNpmrcPath = pathJoin(tempNpmrcDir, '.npmrc');
-                        writeFileSync(tempNpmrcPath, `//${registryUrlWithoutScheme}:_authToken=${exchange.token}\n`, 'utf-8');
-                        logger.info(`Wrote temporary .npmrc for dist-tag at ${tempNpmrcPath}`);
-                        distTagEnv = {
-                            ...env,
-                            NPM_CONFIG_USERCONFIG: tempNpmrcPath,
-                        };
-                    }
-
-                    for (const tag of tagsToApply) {
-                        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag}`;
-                        logger.info(`Setting tag '${tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
-                        const res = tryExecSync(cmd, { cwd: packageDirectory, env: distTagEnv });
-                        if (res.success) {
-                            logger.info(`Successfully set tag '${tag}' for package ${packageJson.name}@${packageJson.version}`);
-                            if (webhook) {
-                                await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
-                            }
-                        }
-                        else {
-                            logger.error(`Failed to set tag '${tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
-                            if (webhook) {
-                                await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
-                            }
+                        // dist-tag add is unsupported under OIDC by the npm registry — warn loudly
+                        // instead of attempting and failing. Users who need multiple dist-tags
+                        // applied to the same version currently have to use --access-token.
+                        const list = tagsToApply.map(t => `'${t}'`).join(', ');
+                        const issueUrl = 'https://github.com/npm/cli/issues/8547';
+                        logger.warn(`⚠ Cannot apply additional tag(s) ${list} under --oidc: 'npm dist-tag add' is not supported with OIDC trusted publishing yet. See ${issueUrl}. Workaround: publish a new version under each tag, or use --access-token for the dist-tag step.`);
+                        if (webhook) {
+                            const tagsCode = tagsToApply.map(t => `\`${t}\``).join(', ');
+                            await sendMessageToWebhook(webhook, `⚠️ **Skipped dist-tag(s)** ${tagsCode} for \`${packageJson.name}@${packageJson.version}\` — \`npm dist-tag add\` is not supported under OIDC ([npm/cli#8547](<${issueUrl}>)).`, { logger });
                         }
                     }
-
-                    if (tempNpmrcDir) {
-                        try { unlinkSync(pathJoin(tempNpmrcDir, '.npmrc')); } catch { /* ignore */ }
+                    else {
+                        for (const tag of tagsToApply) {
+                            const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag}`;
+                            logger.info(`Setting tag '${tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
+                            const res = tryExecSync(cmd, { cwd: packageDirectory, env });
+                            if (res.success) {
+                                logger.info(`Successfully set tag '${tag}' for package ${packageJson.name}@${packageJson.version}`);
+                                if (webhook) {
+                                    await sendMessageToWebhook(webhook, `✅ **Set ${registryName} tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\``, { logger });
+                                }
+                            }
+                            else {
+                                logger.error(`Failed to set tag '${tag}' for package ${packageJson.name}@${packageJson.version}:${res.error}`);
+                                if (webhook) {
+                                    await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
+                                }
+                            }
+                        }
                     }
                 }
             }

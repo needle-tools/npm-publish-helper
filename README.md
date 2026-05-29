@@ -193,8 +193,8 @@ If OIDC publishing fails:
 - **Fix:** Use Node.js 24+ in your workflow (`node-version: '24'`), which includes npm 11.5+
 - Alternatively, add a step to upgrade npm: `npm install -g npm@latest`
 
-**`npm dist-tag add` with OIDC:**
-`npm dist-tag` doesn't yet support OIDC directly (see [npm/cli#8547](https://github.com/npm/cli/issues/8547)). When `--tag` is passed it is usually set during `npm publish` itself (which works with OIDC). For the case where the package is already published and only the dist-tag needs to be updated, this helper transparently exchanges the GitHub OIDC token for a short-lived npm token via npm's `/-/npm/v1/oidc/token/exchange/package/<name>` endpoint (the same approach as [electron/npm-trusted-auth-action](https://github.com/electron/npm-trusted-auth-action)) and uses it for the `dist-tag add` call. The exchanged token is masked in GitHub Actions logs.
+**Multiple `--tag` values with OIDC:**
+The first `--tag` is applied during `npm publish` and works fine with OIDC. Additional `--tag` values would require `npm dist-tag add`, which **does not yet work with OIDC trusted publishing** — the npm registry returns 401 for dist-tag operations using OIDC-exchanged tokens (see [npm/cli#8547](https://github.com/npm/cli/issues/8547)). When extra tags are requested under `--oidc`, this helper logs a warning and skips them rather than failing. Workarounds: publish a new (unchanged) version under each additional tag, or fall back to `--access-token` if you need multiple dist-tags applied to the same version.
 
 ---
 
