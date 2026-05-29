@@ -494,7 +494,7 @@ export async function publish(args) {
                     }
 
                     for (const tag of tagsToApply) {
-                        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag}`;
+                        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag} --loglevel verbose`;
                         logger.info(`Setting tag '${tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
                         const res = tryExecSync(cmd, { cwd: packageDirectory, env: distTagEnv });
                         if (res.success) {
