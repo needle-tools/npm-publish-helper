@@ -1,6 +1,8 @@
 import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdtempSync } from 'fs';
 import { resolve } from 'path';
+import { tmpdir } from 'os';
+import { join as pathJoin } from 'path';
 import { sendMessageToWebhook, sendMessageToWebhookWithCodeblock } from './webhooks.js';
 import { obfuscateToken, tryExecSync, tryWriteOutputForCI } from './utils.js';
 import { getDiffSinceLastPush } from './utils.git.js';
@@ -463,6 +465,8 @@ export async function publish(args) {
                 if (tagsToApply.length > 0) {
                     /** @type {NodeJS.ProcessEnv} */
                     let distTagEnv = env;
+                    /** @type {string | null} */
+                    let tempNpmrcDir = null;
                     if (args.useOidc) {
                         // Workaround for npm/cli#8547: `npm dist-tag add` does not support OIDC yet.
                         // Exchange the GitHub OIDC token once and reuse it for all dist-tag operations.
@@ -480,21 +484,24 @@ export async function publish(args) {
                         }
                         let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
                         if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
-                        // Inject the exchanged token via every channel npm might consult.
-                        // - NODE_AUTH_TOKEN: substituted into the .npmrc that actions/setup-node@v4 writes
-                        //   (`//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`). Without overriding this,
-                        //   npm sees setup-node's placeholder ("XXXXX-XXXXX-XXXXX-XXXXX") and returns E401.
-                        // - npm_config_*: direct config override for environments that don't use that .npmrc.
+
+                        // Write a dedicated .npmrc with the exchanged token and point npm at it via
+                        // NPM_CONFIG_USERCONFIG. This bypasses whatever .npmrc setup-node wrote
+                        // (which contains a literal `${NODE_AUTH_TOKEN}` template that, for reasons
+                        // we can't reliably influence from a child process, results in no auth
+                        // header being sent — verified via `npm http fetch PUT 401 ... need: Basic, Bearer`).
+                        tempNpmrcDir = mkdtempSync(pathJoin(tmpdir(), 'needle-npmrc-'));
+                        const tempNpmrcPath = pathJoin(tempNpmrcDir, '.npmrc');
+                        writeFileSync(tempNpmrcPath, `//${registryUrlWithoutScheme}:_authToken=${exchange.token}\n`, 'utf-8');
+                        logger.info(`Wrote temporary .npmrc for dist-tag at ${tempNpmrcPath}`);
                         distTagEnv = {
                             ...env,
-                            NODE_AUTH_TOKEN: exchange.token,
-                            NPM_TOKEN: exchange.token,
-                            [`npm_config_//${registryUrlWithoutScheme}:_authToken`]: exchange.token,
+                            NPM_CONFIG_USERCONFIG: tempNpmrcPath,
                         };
                     }
 
                     for (const tag of tagsToApply) {
-                        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag} --loglevel verbose`;
+                        const cmd = `npm dist-tag add ${packageJson.name}@${packageJson.version} ${tag}`;
                         logger.info(`Setting tag '${tag}' for package ${packageJson.name}@${packageJson.version} (${cmd})`);
                         const res = tryExecSync(cmd, { cwd: packageDirectory, env: distTagEnv });
                         if (res.success) {
@@ -509,6 +516,10 @@ export async function publish(args) {
                                 await sendMessageToWebhookWithCodeblock(webhook, `❌ **Failed to set tag** \`${tag}\` for package \`${packageJson.name}@${packageJson.version}\`:`, res.error, { logger });
                             }
                         }
+                    }
+
+                    if (tempNpmrcDir) {
+                        try { unlinkSync(pathJoin(tempNpmrcDir, '.npmrc')); } catch { /* ignore */ }
                     }
                 }
             }
