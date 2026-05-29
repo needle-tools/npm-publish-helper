@@ -480,8 +480,15 @@ export async function publish(args) {
                         }
                         let registryUrlWithoutScheme = (args.registry || 'https://registry.npmjs.org/').replace(/https?:\/\//, '');
                         if (!registryUrlWithoutScheme.endsWith('/')) registryUrlWithoutScheme += '/';
+                        // Inject the exchanged token via every channel npm might consult.
+                        // - NODE_AUTH_TOKEN: substituted into the .npmrc that actions/setup-node@v4 writes
+                        //   (`//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}`). Without overriding this,
+                        //   npm sees setup-node's placeholder ("XXXXX-XXXXX-XXXXX-XXXXX") and returns E401.
+                        // - npm_config_*: direct config override for environments that don't use that .npmrc.
                         distTagEnv = {
                             ...env,
+                            NODE_AUTH_TOKEN: exchange.token,
+                            NPM_TOKEN: exchange.token,
                             [`npm_config_//${registryUrlWithoutScheme}:_authToken`]: exchange.token,
                         };
                     }
