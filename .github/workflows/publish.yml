@@ -21,5 +21,8 @@ jobs:
 
           - run: npm install
 
+          - name: Test
+            run: npm test
+
           - name: Publish
             run: npx . publish "." --webhook "${{ secrets.DISCORD_WEBHOOK }}" --oidc --version+time --version+name --version+hash --create-tag --tag ${{ github.ref_name }} --tag "test-tag" --llm-api-key "${{ secrets.LLM_API_KEY }}"

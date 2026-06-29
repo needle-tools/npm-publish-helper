@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "bin": "./bin/cli.js",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  },
   "types": "./types/index.d.ts",
   "exports": {
     ".": {
