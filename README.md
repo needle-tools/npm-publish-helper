@@ -53,6 +53,34 @@ Publishes the npm package from the specified directory.
 | `--llm-api-key <api-key>`| string  | An optional LLM API key for summarizing changes since the last push. The summary is then sent to the webhook.                                                                      |         |
 | `--prepare-package`   | boolean | If set, runs `update-npmdef`, `compile`, and `build` before publishing.                                                                                                           | `false` |
 
+### `apply-version <directory>`
+Computes the next version from the `--version+*` flags and writes it into the target `package.json` (via `npm version --no-git-tag-version`) **without publishing**.
+
+Use this when your build bakes the package version into its output (e.g. a Vite `define`, an injected constant, a generated file). In that case the version must be finalized on the **source** package *before* the build runs — otherwise the build embeds the base version (e.g. `5.1.2`) while `publish` only rewrites `package.json` afterwards, leaving the built artifact and the published version out of sync.
+
+Typical flow:
+1. `apply-version "." --tag "$TAG" --version+tag --version+name --version+hash --version+time` — finalize the version on the source package.
+2. Build — the build now bakes the final version.
+3. `publish "./dist" --tag "$TAG"` — **without** any `--version+*` flags, so the already-finalized version is published as-is (passing them again would append the suffix a second time).
+
+The computed version uses the exact same logic as `publish`, so both commands always agree for the same commit and flags. The resulting version is also written to the `package-version` CI output (`$GITHUB_OUTPUT`).
+
+**Arguments:**
+
+| Argument      | Type   | Description                                                                 |
+|---------------|--------|-----------------------------------------------------------------------------|
+| `<directory>` | string | (Required) Directory containing the `package.json` whose version to update. |
+
+**Options:**
+
+| Option           | Type    | Description                                                                                          | Default |
+|------------------|---------|------------------------------------------------------------------------------------------------------|---------|
+| `--tag <tag>`    | string  | Tag used when `--version+tag` is set (e.g. `canary`). Slash-separated refs are reduced to the last segment (e.g. `release/canary` → `canary`). Ignored when `latest`. |         |
+| `--version+hash` | boolean | Appends the short git commit hash to the version.                                                    | `false` |
+| `--version+time` | boolean | Appends a Unix epoch timestamp (seconds) for correct semver prerelease ordering.                      | `false` |
+| `--version+name` | boolean | Appends a human-readable name derived from the commit hash. Deterministic per commit.                | `false` |
+| `--version+tag`  | boolean | Appends the tag to the version.                                                                      | `false` |
+
 ### `prepare-publish`
 This is a hidden command that runs `update-npmdef`, then `build` (similar to `compile-library`), and finally `compile`. It's used internally for preparing a package before publishing but is not typically run directly by users.
 

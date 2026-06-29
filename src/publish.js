@@ -8,7 +8,7 @@ import { runLLM } from './utils.llm.js';
 import { tryLoadGithubEventData } from './utils.github.js';
 import { updateNpmdef } from './npmdef.js';
 import { build, compile } from './compile.js';
-import { getVersionName } from './version-names.js';
+import { computeNextVersion } from './version.js';
 
 
 /**
@@ -199,46 +199,15 @@ export async function publish(args) {
     {
         const currentVersion = packageJson.version;
 
-        let nextVersion = currentVersion;
-        if (args.useTagInVersion && args.tag && args.tag !== "latest") {
-            // First remove the existing tag the pre-release tag if it exists
-            const dashIndex = nextVersion.indexOf('-');
-            if (dashIndex > 0) nextVersion = nextVersion.substring(0, dashIndex);
-            // Then append the new tag
-            logger.info(`Adding tag '${args.tag}' to version.`);
-            nextVersion += `-${args.tag}`;
-        }
-        if (args.useTimeInVersion) {
-            const epochSeconds = Math.floor(Date.now() / 1000);
-            logger.info(`Adding epoch timestamp '${epochSeconds}' to version.`);
-            if (nextVersion.includes('-')) {
-                nextVersion += `.${epochSeconds}`;
-            }
-            else {
-                nextVersion += `-${epochSeconds}`;
-            }
-        }
-        if (args.useNameInVersion && shortSha) {
-            const name = getVersionName(shortSha);
-            logger.info(`Adding name '${name}' to version (derived from hash '${shortSha}').`);
-            if (nextVersion.includes('-')) {
-                nextVersion += `.${name}`;
-            }
-            else {
-                nextVersion += `-${name}`;
-            }
-        }
-        if (args.useHashInVersion && shortSha) {
-            if (nextVersion.includes('-')) {
-                nextVersion += `.${shortSha}`;
-            }
-            else {
-                nextVersion += `-${shortSha}`;
-            }
-        }
-        else {
-            logger.info(`Skipping commit hash in version as useCommitHash is false or shortSha is not available.`);
-        }
+        const nextVersion = computeNextVersion(currentVersion, {
+            useTagInVersion: args.useTagInVersion,
+            tag: args.tag,
+            useTimeInVersion: args.useTimeInVersion,
+            useNameInVersion: args.useNameInVersion,
+            useHashInVersion: args.useHashInVersion,
+            shortSha,
+            logger,
+        });
         if (currentVersion !== nextVersion) {
             // the package version can only be updated if it's different
             const cmd = `npm version ${nextVersion} --no-git-tag-version`;

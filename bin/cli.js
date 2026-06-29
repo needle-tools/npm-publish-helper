@@ -37,6 +37,37 @@ program.command('compile-library', 'Compile library')
         });
     });
 
+program.command('apply-version', 'Compute the next version from the --version+* flags and write it into the target package.json (no publish). Run this on the SOURCE package BEFORE building, so a build that bakes the version into its bundle picks up the final version.')
+    .argument('<directory>', 'Directory containing the package.json to update', { validator: program.STRING })
+    .option("--tag <tag>", "Tag used for the version when --version+tag is set (e.g. 'canary'). Ignored when 'latest'.", { required: false, validator: program.STRING })
+    .option("--version+hash", "Include the short commit hash in the version", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--version+time", "Include an epoch timestamp in the version for correct semver prerelease ordering", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--version+name", "Include a human-readable name derived from the commit hash", { required: false, validator: program.BOOLEAN, default: false })
+    .option("--version+tag", "Include the tag in the version", { required: false, validator: program.BOOLEAN, default: false })
+    .action(async ({ logger, args, options }) => {
+        const { applyVersion } = await import('../src/version.js');
+        const directory = args.directory.toString();
+        // Caporal may pass a single --tag as string or omit it. Normalize to string|null,
+        // keeping the last non-empty segment when a slash-separated ref is passed.
+        let tag = options.tag == null ? null : options.tag.toString();
+        if (tag && tag.includes('/')) {
+            const parts = tag.split('/').filter(p => p.length > 0);
+            tag = parts.length > 0 ? parts[parts.length - 1] : null;
+        }
+        const nextVersion = applyVersion({
+            logger,
+            packageDirectory: directory,
+            tag,
+            useHashInVersion: options.versionHash === true,
+            useTimeInVersion: options.versionTime === true,
+            useNameInVersion: options.versionName === true,
+            useTagInVersion: options.versionTag === true,
+        });
+        logger.info(`Version set to ${nextVersion}`);
+        const { tryWriteOutputForCI } = await import('../src/utils.js');
+        tryWriteOutputForCI("package-version", nextVersion, { logger });
+    });
+
 program.command('prepare-publish', 'Compile and update')
     .configure({ visible: false, strictOptions: false })
     .option('--library <library>', 'Library name', { required: false, validator: program.STRING })
